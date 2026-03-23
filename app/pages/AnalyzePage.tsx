@@ -64,7 +64,7 @@ export default function AnalyzePage() {
             </div>
             <span className="font-semibold text-gray-900 tracking-tight">Content Insights</span>
           </div>
-          <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors">
+          <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer">
             Learn More
           </button>
         </div>
@@ -203,7 +203,7 @@ export default function AnalyzePage() {
             <button
               type="submit"
               disabled={!isReady || analyzing}
-              className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2 mt-2"
+              className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2 mt-2 cursor-pointer"
             >
               {analyzing ? (
                 <>

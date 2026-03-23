@@ -53,7 +53,7 @@ export default function LandingPage() {
 
               <button
                 onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
-                className="text-indigo-600 text-sm font-medium hover:text-indigo-700 transition-colors"
+                className="text-indigo-600 text-sm font-medium hover:text-indigo-700 transition-colors cursor-pointer"
               >
                 Learn more ↓
               </button>
@@ -63,13 +63,13 @@ export default function LandingPage() {
             <div className="w-full max-w-xs flex flex-col gap-3">
               <button
                 onClick={() => navigate("/login")}
-                className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm"
+                className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm cursor-pointer"
               >
                 Log In
               </button>
               <button
                 onClick={() => navigate("/signup")}
-                className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm"
+                className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm cursor-pointer"
               >
                 Don't have an account? Get started!
               </button>
@@ -144,7 +144,7 @@ export default function LandingPage() {
           </p>
           <button
             onClick={() => navigate("/signup")}
-            className="px-8 py-3 bg-white text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors shadow-sm"
+            className="px-8 py-3 bg-white text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors shadow-sm cursor-pointer"
           >
             Start for free
           </button>

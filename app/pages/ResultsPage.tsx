@@ -84,7 +84,7 @@ function FeedbackCard({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors text-left"
+        className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors text-left cursor-pointer"
       >
         <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
           <Icon className={`w-5 h-5 ${color}`} />
@@ -170,7 +170,7 @@ export default function ResultsPage() {
           {/* Left */}
           <button
             onClick={() => navigate("/analyze")}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Revise
@@ -193,7 +193,7 @@ export default function ResultsPage() {
 
           {/* Right */}
           <div className="flex items-center gap-3">
-            <button className="hidden sm:flex items-center gap-1.5 text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors border border-indigo-200 rounded-lg px-3 py-1.5">
+            <button className="hidden sm:flex items-center gap-1.5 text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors border border-indigo-200 rounded-lg px-3 py-1.5 cursor-pointer">
               <CreditCard className="w-3.5 h-3.5" />
               Get Credits
             </button>
@@ -202,7 +202,7 @@ export default function ResultsPage() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
                   <User className="w-4 h-4 text-indigo-600" />
@@ -219,7 +219,7 @@ export default function ResultsPage() {
                   ].map(({ icon: Icon, label }) => (
                     <button
                       key={label}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => setDropdownOpen(false)}
                     >
                       <Icon className="w-4 h-4 text-gray-400" />
@@ -228,7 +228,7 @@ export default function ResultsPage() {
                   ))}
                   <div className="border-t border-gray-100 my-1" />
                   <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                     onClick={() => navigate("/")}
                   >
                     <LogOut className="w-4 h-4" />
@@ -256,7 +256,7 @@ export default function ResultsPage() {
                 className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${
                   selectedItem.id === item.id
                     ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                    : "text-gray-600 hover:bg-gray-50"
+                    : "text-gray-600 hover:bg-gray-50 cursor-pointer"
                 }`}
                 style={{ fontWeight: selectedItem.id === item.id ? 500 : 400 }}
               >
@@ -301,7 +301,7 @@ export default function ResultsPage() {
                 className={`px-5 py-2 rounded-lg text-sm transition-all ${
                   activeTab === "feedback"
                     ? "bg-white text-gray-900 shadow-sm font-medium"
-                    : "text-gray-500 hover:text-gray-700"
+                    : "text-gray-500 hover:text-gray-700 cursor-pointer"
                 }`}
               >
                 Feedback
@@ -311,7 +311,7 @@ export default function ResultsPage() {
                 className={`px-5 py-2 rounded-lg text-sm transition-all ${
                   activeTab === "visual"
                     ? "bg-white text-gray-900 shadow-sm font-medium"
-                    : "text-gray-500 hover:text-gray-700"
+                    : "text-gray-500 hover:text-gray-700 cursor-pointer"
                 }`}
               >
                 Visual
@@ -377,7 +377,7 @@ export default function ResultsPage() {
                     </div>
                     <button
                       onClick={() => { /* save */ }}
-                      className={`text-gray-300 hover:text-rose-400 transition-colors`}
+                      className={`text-gray-300 hover:text-rose-400 transition-colors cursor-pointer`}
                     >
                       <Heart className="w-4 h-4" />
                     </button>
@@ -400,7 +400,7 @@ export default function ResultsPage() {
                     <button
                       onClick={handleGenerate}
                       disabled={generating}
-                      className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {generating ? (
                         <>
@@ -421,13 +421,13 @@ export default function ResultsPage() {
                         <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
                           <button
                             onClick={() => setThumbnailView("list")}
-                            className={`p-1.5 rounded-md transition-colors ${thumbnailView === "list" ? "bg-white shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                            className={`p-1.5 rounded-md transition-colors ${thumbnailView === "list" ? "bg-white shadow-sm" : "text-gray-400 hover:text-gray-600 cursor-pointer"}`}
                           >
                             <List className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setThumbnailView("grid")}
-                            className={`p-1.5 rounded-md transition-colors ${thumbnailView === "grid" ? "bg-white shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                            className={`p-1.5 rounded-md transition-colors ${thumbnailView === "grid" ? "bg-white shadow-sm" : "text-gray-400 hover:text-gray-600 cursor-pointer"}`}
                           >
                             <Grid3X3 className="w-3.5 h-3.5" />
                           </button>
@@ -440,7 +440,7 @@ export default function ResultsPage() {
                             <div key={i} className="rounded-lg overflow-hidden border border-gray-100 aspect-video relative group cursor-pointer">
                               <img src={src} alt={`Generated ${i + 1}`} className="w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
-                                <button className="opacity-0 group-hover:opacity-100 text-white transition-opacity">
+                                <button className="opacity-0 group-hover:opacity-100 text-white transition-opacity cursor-pointer">
                                   <Heart className="w-3.5 h-3.5" />
                                 </button>
                               </div>
@@ -458,7 +458,7 @@ export default function ResultsPage() {
                                 <p className="text-xs text-gray-500">Variant {i + 1}</p>
                                 <p className="text-xs text-gray-400 mt-0.5">Click to use</p>
                               </div>
-                              <button className="text-gray-300 group-hover:text-rose-400 transition-colors flex-shrink-0">
+                              <button className="text-gray-300 group-hover:text-rose-400 transition-colors flex-shrink-0 cursor-pointer">
                                 <Heart className="w-4 h-4" />
                               </button>
                             </div>
@@ -478,7 +478,7 @@ export default function ResultsPage() {
                     </div>
                     <button
                       onClick={() => setSavedTitle(!savedTitle)}
-                      className={`transition-colors ${savedTitle ? "text-rose-400" : "text-gray-300 hover:text-rose-400"}`}
+                      className={`transition-colors ${savedTitle ? "text-rose-400 cursor-pointer" : "text-gray-300 hover:text-rose-400 cursor-pointer"}`}
                     >
                       <Heart className={`w-4 h-4 ${savedTitle ? "fill-rose-400" : ""}`} />
                     </button>
@@ -498,7 +498,7 @@ export default function ResultsPage() {
                     </div>
                     <button
                       onClick={() => setSavedTags(!savedTags)}
-                      className={`transition-colors ${savedTags ? "text-rose-400" : "text-gray-300 hover:text-rose-400"}`}
+                      className={`transition-colors ${savedTags ? "text-rose-400 cursor-pointer" : "text-gray-300 hover:text-rose-400 cursor-pointer"}`}
                     >
                       <Heart className={`w-4 h-4 ${savedTags ? "fill-rose-400" : ""}`} />
                     </button>

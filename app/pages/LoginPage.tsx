@@ -26,7 +26,7 @@ export default function LoginPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -39,7 +39,7 @@ export default function LoginPage() {
           </div>
           <button
             onClick={() => navigate("/signup")}
-            className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+            className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
           >
             Sign up
           </button>
@@ -76,7 +76,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-sm text-gray-700" style={{ fontWeight: 500 }}>Password</label>
-                  <button type="button" className="text-xs text-indigo-600 hover:text-indigo-700 transition-colors">
+                  <button type="button" className="text-xs text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer">
                     Forgot password?
                   </button>
                 </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-all mt-2 shadow-sm"
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 transition-all mt-2 shadow-sm cursor-pointer"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -129,7 +129,7 @@ export default function LoginPage() {
                 <button
                   key={provider}
                   type="button"
-                  className="py-2.5 px-4 border border-gray-200 rounded-xl text-xs text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                  className="py-2.5 px-4 border border-gray-200 rounded-xl text-xs text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
                 >
                   {provider}
                 </button>
@@ -140,7 +140,7 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <button
                 onClick={() => navigate("/signup")}
-                className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+                className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
               >
                 Sign up free
               </button>

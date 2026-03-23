@@ -80,8 +80,8 @@ export default function PhrasesPage() {
                 onClick={() => setSelected(selected === phrase.id ? null : phrase.id)}
                 className={`w-full text-left p-4 rounded-xl border transition-all ${
                   selected === phrase.id
-                    ? "border-indigo-400 bg-indigo-50 shadow-sm"
-                    : "border-gray-200 bg-white hover:border-indigo-200 hover:bg-gray-50"
+                    ? "border-indigo-400 bg-indigo-50 shadow-sm cursor-pointer"
+                    : "border-gray-200 bg-white hover:border-indigo-200 hover:bg-gray-50 cursor-pointer"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -127,14 +127,14 @@ export default function PhrasesPage() {
           <div className="flex flex-col gap-3">
             <button
               onClick={handleContinue}
-              className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-all shadow-sm flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               {selected ? "Use Selected Phrase & View Results" : "Continue with Original Title"}
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate("/analyze")}
-              className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
             >
               Edit my content details
             </button>
