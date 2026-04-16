@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouteNavigator } from "../lib/routeState";
 import { BarChart2, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function SignupPage() {
-  const navigate = useNavigate();
+  const navigate = useRouteNavigator();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);

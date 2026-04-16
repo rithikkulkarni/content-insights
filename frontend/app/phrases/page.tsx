@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useRouteNavigator, useRouteState } from "../lib/routeState";
 import {
   BarChart2,
   ArrowLeft,
@@ -10,10 +10,22 @@ import {
 } from "lucide-react";
 import { mockPhrases } from "../lib/mockData";
 
+type AnalysisForm = {
+  title: string;
+  tags: string;
+  topic: string;
+  subscriberCount: string;
+};
+
+type PhrasesState = {
+  form?: AnalysisForm;
+  thumbnail?: string | null;
+};
+
 export default function PhrasesPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { form, thumbnail } = (location.state as any) || {};
+  const navigate = useRouteNavigator();
+  const routeState = useRouteState<PhrasesState>();
+  const { form, thumbnail } = routeState ?? {};
 
   const [selected, setSelected] = useState<string | null>(null);
 

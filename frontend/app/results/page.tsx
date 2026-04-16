@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useRouteNavigator, useRouteState } from "../lib/routeState";
 import {
   BarChart2,
   Heart,
@@ -26,6 +26,18 @@ import {
   mockFeedback,
   mockGeneratedThumbnails,
 } from "../lib/mockData";
+
+type AnalysisForm = {
+  title: string;
+  tags: string;
+  topic: string;
+  subscriberCount: string;
+};
+
+type ResultsState = {
+  form?: AnalysisForm;
+  thumbnail?: string | null;
+};
 
 type Tab = "feedback" | "visual";
 type ThumbnailView = "list" | "grid";
@@ -151,9 +163,9 @@ function FeedbackCard({
 }
 
 export default function ResultsPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { form, thumbnail } = (location.state as any) || {};
+  const navigate = useRouteNavigator();
+  const routeState = useRouteState<ResultsState>();
+  const { form, thumbnail } = routeState ?? {};
 
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [selectedItem, setSelectedItem] = useState(mockContentItems[0]);

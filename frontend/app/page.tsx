@@ -1,5 +1,5 @@
 "use client";
-import { useNavigate } from "react-router";
+import { useRouteNavigator } from "./lib/routeState";
 import {
   BarChart2,
   Zap,
@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
-  const navigate = useNavigate();
+  const navigate = useRouteNavigator();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
