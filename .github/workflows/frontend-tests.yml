@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - "frontend/**"
+      - "package.json"
       - "package-lock.json"
-      - "frontend/package.json"
       - ".github/workflows/frontend-tests.yml"
 
 jobs:
@@ -28,4 +28,4 @@ jobs:
         run: npm ci
 
       - name: Run frontend tests
-        run: npm run test --workspace frontend
+        run: npm run test
