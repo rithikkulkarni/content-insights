@@ -1,6 +1,13 @@
 "use client";
 import { useNavigate } from "react-router";
-import { BarChart2, Zap, Target, TrendingUp, Star, CheckCircle2 } from "lucide-react";
+import {
+  BarChart2,
+  Zap,
+  Target,
+  TrendingUp,
+  Star,
+  CheckCircle2,
+} from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -14,7 +21,9 @@ export default function LandingPage() {
             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center">
               <BarChart2 className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-gray-900 tracking-tight">Content Insights</span>
+            <span className="font-semibold text-gray-900 tracking-tight">
+              Content Insights
+            </span>
           </div>
         </div>
       </header>
@@ -27,14 +36,21 @@ export default function LandingPage() {
             <div className="flex-1 max-w-2xl">
               <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 mb-6">
                 <Zap className="w-3 h-3 text-indigo-600" />
-                <span className="text-xs text-indigo-700 font-medium">AI-powered creator analytics</span>
+                <span className="text-xs text-indigo-700 font-medium">
+                  AI-powered creator analytics
+                </span>
               </div>
-              <h1 className="text-5xl lg:text-6xl text-gray-900 leading-tight mb-5" style={{ fontWeight: 700, lineHeight: 1.1 }}>
+              <h1
+                className="text-5xl lg:text-6xl text-gray-900 leading-tight mb-5"
+                style={{ fontWeight: 700, lineHeight: 1.1 }}
+              >
                 Understand what makes your content{" "}
                 <span className="text-indigo-600">perform</span>
               </h1>
               <p className="text-lg text-gray-500 mb-8 leading-relaxed">
-                Analyze your thumbnails, titles, and tags with AI. Get actionable feedback and optimized suggestions to grow your audience faster.
+                Analyze your thumbnails, titles, and tags with AI. Get
+                actionable feedback and optimized suggestions to grow your
+                audience faster.
               </p>
 
               {/* Feature bullets */}
@@ -52,7 +68,11 @@ export default function LandingPage() {
               </div>
 
               <button
-                onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document
+                    .getElementById("features")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 className="text-indigo-600 text-sm font-medium hover:text-indigo-700 transition-colors cursor-pointer"
               >
                 Learn more ↓
@@ -71,17 +91,22 @@ export default function LandingPage() {
                 onClick={() => navigate("/signup")}
                 className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm cursor-pointer"
               >
-                Don't have an account? Get started!
+                Don&apos;t have an account? Get started!
               </button>
 
               {/* Social proof */}
               <div className="mt-4 pt-4 border-t border-gray-100 text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    <Star
+                      key={i}
+                      className="w-3 h-3 fill-amber-400 text-amber-400"
+                    />
                   ))}
                 </div>
-                <p className="text-xs text-gray-400">Trusted by 12,000+ creators</p>
+                <p className="text-xs text-gray-400">
+                  Trusted by 12,000+ creators
+                </p>
               </div>
             </div>
           </div>
@@ -89,13 +114,21 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-gray-50 border-t border-gray-100 py-20 px-6">
+      <section
+        id="features"
+        className="bg-gray-50 border-t border-gray-100 py-20 px-6"
+      >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl text-gray-900 mb-3" style={{ fontWeight: 700 }}>
+            <h2
+              className="text-3xl text-gray-900 mb-3"
+              style={{ fontWeight: 700 }}
+            >
               Everything you need to grow
             </h2>
-            <p className="text-gray-500">One platform. Complete creator intelligence.</p>
+            <p className="text-gray-500">
+              One platform. Complete creator intelligence.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -121,11 +154,21 @@ export default function LandingPage() {
                 bg: "bg-violet-50",
               },
             ].map(({ icon: Icon, title, desc, color, bg }) => (
-              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4`}>
+              <div
+                key={title}
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+              >
+                <div
+                  className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4`}
+                >
                   <Icon className={`w-5 h-5 ${color}`} />
                 </div>
-                <h3 className="text-gray-900 mb-2" style={{ fontWeight: 600, fontSize: "1rem" }}>{title}</h3>
+                <h3
+                  className="text-gray-900 mb-2"
+                  style={{ fontWeight: 600, fontSize: "1rem" }}
+                >
+                  {title}
+                </h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
               </div>
             ))}
@@ -158,9 +201,13 @@ export default function LandingPage() {
             <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
               <BarChart2 className="w-3 h-3 text-white" />
             </div>
-            <span className="text-sm text-gray-600 font-medium">Content Insights</span>
+            <span className="text-sm text-gray-600 font-medium">
+              Content Insights
+            </span>
           </div>
-          <p className="text-xs text-gray-400">© 2024 Content Insights. All rights reserved.</p>
+          <p className="text-xs text-gray-400">
+            © 2024 Content Insights. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
