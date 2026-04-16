@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRouteNavigator } from "../lib/routeState";
 import { BarChart2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const navigate = useRouteNavigator();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

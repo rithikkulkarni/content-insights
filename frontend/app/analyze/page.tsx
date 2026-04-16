@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useRouteNavigator } from "../lib/routeState";
 import {
   BarChart2,
   ArrowLeft,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export default function AnalyzePage() {
-  const navigate = useNavigate();
+  const navigate = useRouteNavigator();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
