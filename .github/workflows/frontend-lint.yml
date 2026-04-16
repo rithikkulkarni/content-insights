@@ -2,10 +2,9 @@ name: Frontend Lint & Format
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - dev
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-lint.yml"
 
 jobs:
   lint-and-format:
