@@ -21,7 +21,11 @@ import {
   CreditCard,
   RotateCcw,
 } from "lucide-react";
-import { mockContentItems, mockFeedback, mockGeneratedThumbnails } from "../lib/mockData";
+import {
+  mockContentItems,
+  mockFeedback,
+  mockGeneratedThumbnails,
+} from "../lib/mockData";
 
 type Tab = "feedback" | "visual";
 type ThumbnailView = "list" | "grid";
@@ -35,7 +39,14 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div className="relative flex items-center justify-center w-28 h-28">
       <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} stroke="#f1f5f9" strokeWidth="8" fill="none" />
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          stroke="#f1f5f9"
+          strokeWidth="8"
+          fill="none"
+        />
         <circle
           cx="50"
           cy="50"
@@ -53,7 +64,9 @@ function ScoreRing({ score }: { score: number }) {
         <span className="text-2xl text-gray-900" style={{ fontWeight: 700 }}>
           {score}
         </span>
-        <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>/ 100</span>
+        <span className="text-xs text-gray-400" style={{ fontWeight: 400 }}>
+          / 100
+        </span>
       </div>
     </div>
   );
@@ -86,17 +99,25 @@ function FeedbackCard({
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 transition-colors text-left cursor-pointer"
       >
-        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+        <div
+          className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}
+        >
           <Icon className={`w-5 h-5 ${color}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-900" style={{ fontWeight: 600 }}>{label}</p>
+          <p className="text-sm text-gray-900" style={{ fontWeight: 600 }}>
+            {label}
+          </p>
           <p className="text-xs text-gray-500 truncate mt-0.5">{headline}</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <span
             className={`text-sm font-medium ${
-              score >= 75 ? "text-emerald-600" : score >= 55 ? "text-amber-500" : "text-red-500"
+              score >= 75
+                ? "text-emerald-600"
+                : score >= 55
+                  ? "text-amber-500"
+                  : "text-red-500"
             }`}
           >
             {score}
@@ -109,9 +130,13 @@ function FeedbackCard({
 
       {open && (
         <div className="px-5 pb-5 border-t border-gray-50">
-          <p className="text-sm text-gray-600 leading-relaxed mt-4">{details}</p>
+          <p className="text-sm text-gray-600 leading-relaxed mt-4">
+            {details}
+          </p>
           <div className="mt-4 flex flex-col gap-2">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Suggestions</p>
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+              Suggestions
+            </p>
             {suggestions.map((s, i) => (
               <div key={i} className="flex items-start gap-2">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
@@ -143,7 +168,10 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -159,8 +187,7 @@ export default function ResultsPage() {
     }, 1800);
   };
 
-  const displayedTitle =
-    form?.title || selectedItem.title;
+  const displayedTitle = form?.title || selectedItem.title;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -180,14 +207,19 @@ export default function ResultsPage() {
           <div className="flex items-center gap-4">
             {form?.subscriberCount && (
               <span className="text-xs text-gray-400 hidden sm:block">
-                <span className="font-medium text-gray-600">{Number(form.subscriberCount).toLocaleString()}</span> subscribers
+                <span className="font-medium text-gray-600">
+                  {Number(form.subscriberCount).toLocaleString()}
+                </span>{" "}
+                subscribers
               </span>
             )}
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
                 <BarChart2 className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900 tracking-tight text-sm">Content Insights</span>
+              <span className="font-semibold text-gray-900 tracking-tight text-sm">
+                Content Insights
+              </span>
             </div>
           </div>
 
@@ -207,7 +239,9 @@ export default function ResultsPage() {
                 <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
                   <User className="w-4 h-4 text-indigo-600" />
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
+                />
               </button>
 
               {dropdownOpen && (
@@ -246,7 +280,9 @@ export default function ResultsPage() {
         {/* Left Panel */}
         <aside className="w-64 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col hidden md:flex">
           <div className="p-4 border-b border-gray-100">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Analyzed Content</p>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+              Analyzed Content
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5">
             {mockContentItems.map((item) => (
@@ -267,14 +303,16 @@ export default function ResultsPage() {
 
           {/* Score */}
           <div className="p-5 border-t border-gray-100 flex flex-col items-center gap-2">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Overall Score</p>
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+              Overall Score
+            </p>
             <ScoreRing score={selectedItem.score} />
             <p className="text-xs text-gray-500 text-center">
               {selectedItem.score >= 75
                 ? "Good · Minor improvements available"
                 : selectedItem.score >= 55
-                ? "Fair · Several improvements suggested"
-                : "Needs work · Key issues found"}
+                  ? "Fair · Several improvements suggested"
+                  : "Needs work · Key issues found"}
             </p>
           </div>
         </aside>
@@ -285,11 +323,15 @@ export default function ResultsPage() {
           <div className="md:hidden p-4 bg-white border-b border-gray-100 flex items-center gap-3">
             <div className="flex-1">
               <p className="text-xs text-gray-400 mb-0.5">Analyzing</p>
-              <p className="text-sm text-gray-800 font-medium line-clamp-1">{selectedItem.title}</p>
+              <p className="text-sm text-gray-800 font-medium line-clamp-1">
+                {selectedItem.title}
+              </p>
             </div>
             <div className="flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-full">
               <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="text-sm font-medium text-indigo-700">{selectedItem.score}</span>
+              <span className="text-sm font-medium text-indigo-700">
+                {selectedItem.score}
+              </span>
             </div>
           </div>
 
@@ -324,7 +366,10 @@ export default function ResultsPage() {
             {activeTab === "feedback" && (
               <div className="max-w-2xl flex flex-col gap-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-base text-gray-900" style={{ fontWeight: 600 }}>
+                  <h2
+                    className="text-base text-gray-900"
+                    style={{ fontWeight: 600 }}
+                  >
                     Content Feedback
                   </h2>
                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -373,10 +418,17 @@ export default function ResultsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-700" style={{ fontWeight: 600 }}>Thumbnail</span>
+                      <span
+                        className="text-sm text-gray-700"
+                        style={{ fontWeight: 600 }}
+                      >
+                        Thumbnail
+                      </span>
                     </div>
                     <button
-                      onClick={() => { /* save */ }}
+                      onClick={() => {
+                        /* save */
+                      }}
                       className={`text-gray-300 hover:text-rose-400 transition-colors cursor-pointer`}
                     >
                       <Heart className="w-4 h-4" />
@@ -386,12 +438,18 @@ export default function ResultsPage() {
                   {/* Preview */}
                   {thumbnail ? (
                     <div className="rounded-xl overflow-hidden border border-gray-100 aspect-video mb-4">
-                      <img src={thumbnail} alt="Your thumbnail" className="w-full h-full object-cover" />
+                      <img
+                        src={thumbnail}
+                        alt="Your thumbnail"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   ) : (
                     <div className="rounded-xl border-2 border-dashed border-gray-200 aspect-video mb-4 flex flex-col items-center justify-center gap-2 bg-gray-50">
                       <ImageIcon className="w-8 h-8 text-gray-300" />
-                      <p className="text-xs text-gray-400">No thumbnail uploaded</p>
+                      <p className="text-xs text-gray-400">
+                        No thumbnail uploaded
+                      </p>
                     </div>
                   )}
 
@@ -417,7 +475,9 @@ export default function ResultsPage() {
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm text-gray-700 font-medium">Generated thumbnails</p>
+                        <p className="text-sm text-gray-700 font-medium">
+                          Generated thumbnails
+                        </p>
                         <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
                           <button
                             onClick={() => setThumbnailView("list")}
@@ -437,8 +497,15 @@ export default function ResultsPage() {
                       {thumbnailView === "grid" ? (
                         <div className="grid grid-cols-3 gap-2">
                           {mockGeneratedThumbnails.map((src, i) => (
-                            <div key={i} className="rounded-lg overflow-hidden border border-gray-100 aspect-video relative group cursor-pointer">
-                              <img src={src} alt={`Generated ${i + 1}`} className="w-full h-full object-cover" />
+                            <div
+                              key={i}
+                              className="rounded-lg overflow-hidden border border-gray-100 aspect-video relative group cursor-pointer"
+                            >
+                              <img
+                                src={src}
+                                alt={`Generated ${i + 1}`}
+                                className="w-full h-full object-cover"
+                              />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-1.5">
                                 <button className="opacity-0 group-hover:opacity-100 text-white transition-opacity cursor-pointer">
                                   <Heart className="w-3.5 h-3.5" />
@@ -450,13 +517,24 @@ export default function ResultsPage() {
                       ) : (
                         <div className="flex flex-col gap-2">
                           {mockGeneratedThumbnails.map((src, i) => (
-                            <div key={i} className="flex items-center gap-3 p-2 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-gray-50 cursor-pointer transition-all group">
+                            <div
+                              key={i}
+                              className="flex items-center gap-3 p-2 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-gray-50 cursor-pointer transition-all group"
+                            >
                               <div className="w-24 flex-shrink-0 rounded-lg overflow-hidden aspect-video">
-                                <img src={src} alt={`Generated ${i + 1}`} className="w-full h-full object-cover" />
+                                <img
+                                  src={src}
+                                  alt={`Generated ${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-500">Variant {i + 1}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">Click to use</p>
+                                <p className="text-xs text-gray-500">
+                                  Variant {i + 1}
+                                </p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  Click to use
+                                </p>
                               </div>
                               <button className="text-gray-300 group-hover:text-rose-400 transition-colors flex-shrink-0 cursor-pointer">
                                 <Heart className="w-4 h-4" />
@@ -474,19 +552,30 @@ export default function ResultsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Type className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-700" style={{ fontWeight: 600 }}>Title</span>
+                      <span
+                        className="text-sm text-gray-700"
+                        style={{ fontWeight: 600 }}
+                      >
+                        Title
+                      </span>
                     </div>
                     <button
                       onClick={() => setSavedTitle(!savedTitle)}
                       className={`transition-colors ${savedTitle ? "text-rose-400 cursor-pointer" : "text-gray-300 hover:text-rose-400 cursor-pointer"}`}
                     >
-                      <Heart className={`w-4 h-4 ${savedTitle ? "fill-rose-400" : ""}`} />
+                      <Heart
+                        className={`w-4 h-4 ${savedTitle ? "fill-rose-400" : ""}`}
+                      />
                     </button>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-sm text-gray-800">{displayedTitle || "No title provided"}</p>
+                    <p className="text-sm text-gray-800">
+                      {displayedTitle || "No title provided"}
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">{(displayedTitle || "").length} characters</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {(displayedTitle || "").length} characters
+                  </p>
                 </div>
 
                 {/* Tags Section */}
@@ -494,13 +583,20 @@ export default function ResultsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Tag className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-700" style={{ fontWeight: 600 }}>Tags</span>
+                      <span
+                        className="text-sm text-gray-700"
+                        style={{ fontWeight: 600 }}
+                      >
+                        Tags
+                      </span>
                     </div>
                     <button
                       onClick={() => setSavedTags(!savedTags)}
                       className={`transition-colors ${savedTags ? "text-rose-400 cursor-pointer" : "text-gray-300 hover:text-rose-400 cursor-pointer"}`}
                     >
-                      <Heart className={`w-4 h-4 ${savedTags ? "fill-rose-400" : ""}`} />
+                      <Heart
+                        className={`w-4 h-4 ${savedTags ? "fill-rose-400" : ""}`}
+                      />
                     </button>
                   </div>
                   {form?.tags ? (
@@ -516,8 +612,17 @@ export default function ResultsPage() {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      {["youtube growth", "content creator", "subscriber tips", "youtube 2024", "creator strategy"].map((tag) => (
-                        <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                      {[
+                        "youtube growth",
+                        "content creator",
+                        "subscriber tips",
+                        "youtube 2024",
+                        "creator strategy",
+                      ].map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full text-xs"
+                        >
                           {tag}
                         </span>
                       ))}

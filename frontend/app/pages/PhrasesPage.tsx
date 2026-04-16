@@ -1,7 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { BarChart2, ArrowLeft, Sparkles, ChevronRight, TrendingUp } from "lucide-react";
+import {
+  BarChart2,
+  ArrowLeft,
+  Sparkles,
+  ChevronRight,
+  TrendingUp,
+} from "lucide-react";
 import { mockPhrases } from "../lib/mockData";
 
 export default function PhrasesPage() {
@@ -15,7 +21,10 @@ export default function PhrasesPage() {
     navigate("/results", {
       state: {
         form: selected
-          ? { ...form, title: mockPhrases.find((p) => p.id === selected)?.phrase }
+          ? {
+              ...form,
+              title: mockPhrases.find((p) => p.id === selected)?.phrase,
+            }
           : form,
         thumbnail,
       },
@@ -38,7 +47,9 @@ export default function PhrasesPage() {
             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center">
               <BarChart2 className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-gray-900 tracking-tight">Content Insights</span>
+            <span className="font-semibold text-gray-900 tracking-tight">
+              Content Insights
+            </span>
           </div>
           <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors">
             Learn More
@@ -53,19 +64,27 @@ export default function PhrasesPage() {
           <div className="mb-8">
             <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1 mb-4">
               <Sparkles className="w-3 h-3 text-indigo-600" />
-              <span className="text-xs text-indigo-700 font-medium">AI-generated optimizations</span>
+              <span className="text-xs text-indigo-700 font-medium">
+                AI-generated optimizations
+              </span>
             </div>
-            <h1 className="text-2xl text-gray-900 mb-2" style={{ fontWeight: 700 }}>
+            <h1
+              className="text-2xl text-gray-900 mb-2"
+              style={{ fontWeight: 700 }}
+            >
               Different phrases
             </h1>
             <p className="text-sm text-gray-500">
-              We analyzed your title and generated higher-performing alternatives. Select one to use, or keep your original.
+              We analyzed your title and generated higher-performing
+              alternatives. Select one to use, or keep your original.
             </p>
 
             {/* Original title chip */}
             {form?.title && (
               <div className="mt-4 p-3 bg-gray-100 rounded-xl border border-gray-200">
-                <p className="text-xs text-gray-400 mb-0.5">Your original title</p>
+                <p className="text-xs text-gray-400 mb-0.5">
+                  Your original title
+                </p>
                 <p className="text-sm text-gray-700">{form.title}</p>
               </div>
             )}
@@ -77,7 +96,9 @@ export default function PhrasesPage() {
               <button
                 key={phrase.id}
                 type="button"
-                onClick={() => setSelected(selected === phrase.id ? null : phrase.id)}
+                onClick={() =>
+                  setSelected(selected === phrase.id ? null : phrase.id)
+                }
                 className={`w-full text-left p-4 rounded-xl border transition-all ${
                   selected === phrase.id
                     ? "border-indigo-400 bg-indigo-50 shadow-sm cursor-pointer"
@@ -86,7 +107,10 @@ export default function PhrasesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-900 mb-1.5" style={{ fontWeight: selected === phrase.id ? 600 : 400 }}>
+                    <p
+                      className="text-sm text-gray-900 mb-1.5"
+                      style={{ fontWeight: selected === phrase.id ? 600 : 400 }}
+                    >
                       {phrase.phrase}
                     </p>
                     <p className="text-xs text-gray-400">{phrase.reason}</p>
@@ -99,8 +123,8 @@ export default function PhrasesPage() {
                           phrase.score >= 85
                             ? "text-emerald-600"
                             : phrase.score >= 75
-                            ? "text-amber-600"
-                            : "text-gray-500"
+                              ? "text-amber-600"
+                              : "text-gray-500"
                         }`}
                       >
                         {phrase.score}
@@ -129,7 +153,9 @@ export default function PhrasesPage() {
               onClick={handleContinue}
               className="w-full py-3.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              {selected ? "Use Selected Phrase & View Results" : "Continue with Original Title"}
+              {selected
+                ? "Use Selected Phrase & View Results"
+                : "Continue with Original Title"}
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
@@ -141,7 +167,8 @@ export default function PhrasesPage() {
           </div>
 
           <p className="text-center text-xs text-gray-400 mt-6">
-            Scores reflect predicted click-through rate improvement vs. your original title
+            Scores reflect predicted click-through rate improvement vs. your
+            original title
           </p>
         </div>
       </main>
