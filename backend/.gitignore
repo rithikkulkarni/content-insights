@@ -1,9 +1,16 @@
-# Python cache
+# Bytecode
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 
 # Virtual environments
 venv/
 .env/
+
+# pytest
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
