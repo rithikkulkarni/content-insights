@@ -1,48 +1,112 @@
 # app.py — updated with bounded cache and mmap loading
 
 import os
-import gc  # Optional: only needed if you call gc.collect() after cache_clear()
+from functools import lru_cache
+from io import BytesIO
+from typing import List
+
+import cv2
 import joblib
 import numpy as np
-from io import BytesIO
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from PIL import Image
-import cv2, string
-from textblob import TextBlob
-import textstat
-from typing import List
-from pytrends.request import TrendReq
 import requests
+import textstat
 from bs4 import BeautifulSoup
-from functools import lru_cache
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from PIL import Image
+from pytrends.request import TrendReq
+from textblob import TextBlob
 
 from model import FEATURE_ORDER
 
 # ─── Full clickbait / power / timed word lists ────────────────────────────────
 CLICKBAIT_WORDS = {
-    "amazing", "incredible", "shocking", "jaw-dropping", "mind-blowing",
-    "unbelievable", "you won’t believe", "you’ll never guess", "what happens next",
-    "epic", "ultimate", "must", "insane", "secret", "exposed", "revealed",
-    "hack", "these reasons", "10 reasons", "this trick", "don’t miss",
-    "game changer", "craziest", "revealed", "the truth about", "deal of the day",
+    "amazing",
+    "incredible",
+    "shocking",
+    "jaw-dropping",
+    "mind-blowing",
+    "unbelievable",
+    "you won’t believe",
+    "you’ll never guess",
+    "what happens next",
+    "epic",
+    "ultimate",
+    "must",
+    "insane",
+    "secret",
+    "exposed",
+    "revealed",
+    "hack",
+    "these reasons",
+    "10 reasons",
+    "this trick",
+    "don’t miss",
+    "game changer",
+    "craziest",
+    "revealed",
+    "the truth about",
+    "deal of the day",
 }
 
 POWER_WORDS = {
-    "best", "top", "new", "essential", "easy", "quick", "instant", "effortless",
-    "guaranteed", "proven", "genius", "exclusive", "remarkable", "powerful",
-    "revolutionary", "breakthrough", "must-have", "unlock", "master", "ultimate",
-    "secret", "simple", "transform", "hacks", "tips", "tricks",
+    "best",
+    "top",
+    "new",
+    "essential",
+    "easy",
+    "quick",
+    "instant",
+    "effortless",
+    "guaranteed",
+    "proven",
+    "genius",
+    "exclusive",
+    "remarkable",
+    "powerful",
+    "revolutionary",
+    "breakthrough",
+    "must-have",
+    "unlock",
+    "master",
+    "ultimate",
+    "secret",
+    "simple",
+    "transform",
+    "hacks",
+    "tips",
+    "tricks",
 }
 
 TIMED_WORDS = {
-    "now", "today", "just now", "breaking", "this morning", "this afternoon",
-    "this evening", "tonight", "this week", "this weekend", "this month",
-    "this season", "this year", "last minute", "last week", "2023", "2024",
-    "2025", "coming soon", "newly released", "upcoming", "recent", "daily",
-    "weekly", "monthly", "yearly",
+    "now",
+    "today",
+    "just now",
+    "breaking",
+    "this morning",
+    "this afternoon",
+    "this evening",
+    "tonight",
+    "this week",
+    "this weekend",
+    "this month",
+    "this season",
+    "this year",
+    "last minute",
+    "last week",
+    "2023",
+    "2024",
+    "2025",
+    "coming soon",
+    "newly released",
+    "upcoming",
+    "recent",
+    "daily",
+    "weekly",
+    "monthly",
+    "yearly",
 }
 
 # ─── Face detector ────────────────────────────────────────────────────────────
@@ -53,7 +117,9 @@ face_cascade = cv2.CascadeClassifier(
 # ─── FastAPI app setup ────────────────────────────────────────────────────────
 app = FastAPI(
     title="YouTube Virality Predictor",
-    description="Upload a thumbnail, title & tags and subscriber count to predict virality.",
+    description=(
+        "Upload a thumbnail, title & tags and subscriber count " "to predict virality."
+    ),
     version="1.0.0",
 )
 
@@ -64,10 +130,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # serve your static landing page / JS / CSS
 @app.get("/", include_in_schema=False)
 def serve_index():
     return FileResponse("static/index.html")
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -86,6 +154,7 @@ def get_pipeline_for(group: str):
 
 
 # ─── Utility feature functions ────────────────────────────────────────────────
+
 
 def compute_clickbait_score(text: str) -> int:
     return sum(w.lower() in CLICKBAIT_WORDS for w in text.split())
@@ -110,12 +179,19 @@ def compute_title_features(title: str) -> dict:
         "title_subjectivity": blob.sentiment.subjectivity,
         "num_question_marks": title.count("?"),
         "num_exclamation_marks": title.count("!"),
-        "starts_with_keyword": int(words[0].lower() in {"how", "what", "why", "when", "is", "are", "does", "who"} if words else 0),
+        "starts_with_keyword": int(
+            words[0].lower()
+            in {"how", "what", "why", "when", "is", "are", "does", "who"}
+            if words
+            else 0
+        ),
         "title_length": len(title),
         "word_count": len(words),
         "punctuation_count": sum(1 for c in title if c in punctuation),
         "uppercase_word_count": len(upper_words),
-        "percent_letters_uppercase": round(len(uppercase_letters) / len(letters), 3) if letters else 0,
+        "percent_letters_uppercase": (
+            round(len(uppercase_letters) / len(letters), 3) if letters else 0
+        ),
         "num_digits": sum(c.isdigit() for c in title),
         "clickbait_score": compute_clickbait_score(title),
         "num_power_words": sum(w.lower() in POWER_WORDS for w in words),
@@ -155,13 +231,16 @@ def get_twitter_trend_score(keywords: List[str]) -> float:
         return 0.0
 
 
-def calculate_trending_score(keywords: List[str], w1: float = 0.5, w2: float = 0.5) -> float:
+def calculate_trending_score(
+    keywords: List[str], w1: float = 0.5, w2: float = 0.5
+) -> float:
     g = get_google_trend_score(keywords)
     t = get_twitter_trend_score(keywords)
     return round(w1 * g + w2 * t, 4)
 
 
 # ─── Main endpoint ────────────────────────────────────────────────────────────
+
 
 @app.post("/predict/{group}")
 async def predict_group(
@@ -194,7 +273,11 @@ async def predict_group(
     tfeats = compute_title_features(title)
     tlist = [t.strip() for t in tags.split(",") if t.strip()]
     num_tags = len(tlist)
-    tag_sentiment = float(np.mean([TextBlob(t).sentiment.polarity for t in tlist])) if tlist else 0.0
+    tag_sentiment = (
+        float(np.mean([TextBlob(t).sentiment.polarity for t in tlist]))
+        if tlist
+        else 0.0
+    )
     num_unique_tags = int(len(set(t.lower() for t in tlist)))
     avg_tag_length = float(np.mean([len(t) for t in tlist])) if tlist else 0.0
 
