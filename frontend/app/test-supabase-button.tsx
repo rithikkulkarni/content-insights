@@ -1,22 +1,22 @@
 // app/test-supabase-button.tsx
-'use client'
+"use client";
 
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from "@/lib/supabaseClient";
 
 export default function TestSupabaseButton() {
   async function handleClick() {
     const { data, error } = await supabase
-      .from('test_items')
-      .insert([{ title: 'hello from next app' }])
-      .select()
+      .from("test_items")
+      .insert([{ title: "hello from next app" }])
+      .select();
 
-    console.log('data:', data)
-    console.log('error:', error)
+    console.log("data:", data);
+    console.log("error:", error);
 
     if (error) {
-      alert(`Insert failed: ${error.message}`)
+      alert(`Insert failed: ${error.message}`);
     } else {
-      alert('Insert worked!')
+      alert("Insert worked!");
     }
   }
 
@@ -27,5 +27,5 @@ export default function TestSupabaseButton() {
     >
       Test Supabase Insert
     </button>
-  )
+  );
 }

@@ -8,7 +8,7 @@ import {
   Star,
   CheckCircle2,
 } from "lucide-react";
-import TestSupabaseButton from './test-supabase-button'
+import TestSupabaseButton from "./test-supabase-button";
 
 export default function LandingPage() {
   const navigate = useRouteNavigator();
