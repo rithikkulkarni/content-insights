@@ -20,12 +20,13 @@ type AnalysisForm = {
 type PhrasesState = {
   form?: AnalysisForm;
   thumbnail?: string | null;
+  analysisScore?: number;
 };
 
 export default function PhrasesPage() {
   const navigate = useRouteNavigator();
   const routeState = useRouteState<PhrasesState>();
-  const { form, thumbnail } = routeState ?? {};
+  const { form, thumbnail, analysisScore } = routeState ?? {};
 
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -39,6 +40,7 @@ export default function PhrasesPage() {
             }
           : form,
         thumbnail,
+        analysisScore,
       },
     });
   };
