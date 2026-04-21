@@ -37,10 +37,17 @@ type AnalysisForm = {
 type ResultsState = {
   form?: AnalysisForm;
   thumbnail?: string | null;
+  analysisScore?: number;
 };
 
 type Tab = "feedback" | "visual";
 type ThumbnailView = "list" | "grid";
+type ContentItem = {
+  id: string;
+  title: string;
+  score: number;
+  thumbnail: string;
+};
 
 function ScoreRing({ score }: { score: number }) {
   const radius = 44;
@@ -165,10 +172,23 @@ function FeedbackCard({
 export default function ResultsPage() {
   const navigate = useRouteNavigator();
   const routeState = useRouteState<ResultsState>();
-  const { form, thumbnail } = routeState ?? {};
+  const { form, thumbnail, analysisScore } = routeState ?? {};
+
+  const analyzedItem: ContentItem | null = form?.title
+    ? {
+        id: "current-analysis",
+        title: form.title,
+        score:
+          typeof analysisScore === "number" ? analysisScore : mockContentItems[0].score,
+        thumbnail: thumbnail ?? mockContentItems[0].thumbnail,
+      }
+    : null;
+  const contentItems: ContentItem[] = analyzedItem
+    ? [analyzedItem, ...mockContentItems]
+    : mockContentItems;
 
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
-  const [selectedItem, setSelectedItem] = useState(mockContentItems[0]);
+  const [selectedItem, setSelectedItem] = useState<ContentItem>(contentItems[0]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [thumbnailsGenerated, setThumbnailsGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -199,7 +219,7 @@ export default function ResultsPage() {
     }, 1800);
   };
 
-  const displayedTitle = form?.title || selectedItem.title;
+  const displayedTitle = selectedItem.title;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -297,7 +317,7 @@ export default function ResultsPage() {
             </p>
           </div>
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5">
-            {mockContentItems.map((item) => (
+            {contentItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setSelectedItem(item)}

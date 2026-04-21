@@ -24,11 +24,19 @@ export default function AnalyzePage() {
     subscriberCount: "",
   });
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) {
+      setAnalyzeError("Please upload a valid image file.");
+      return;
+    }
+
+    setAnalyzeError(null);
+    setThumbnailFile(file);
     const reader = new FileReader();
     reader.onload = (e) => setThumbnail(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -47,13 +55,42 @@ export default function AnalyzePage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!thumbnailFile) {
+      setAnalyzeError("Please upload a thumbnail before analyzing.");
+      return;
+    }
+
+    setAnalyzeError(null);
     setAnalyzing(true);
-    setTimeout(() => {
+
+    try {
+      const payload = new FormData();
+      payload.append("title", form.title);
+      payload.append("tags", form.tags);
+      payload.append("topic", form.topic);
+      payload.append("subscriberCount", form.subscriberCount);
+      payload.append("thumbnail", thumbnailFile);
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: payload,
+      });
+
+      const data = (await response.json()) as { score?: number; error?: string };
+      if (!response.ok || typeof data.score !== "number") {
+        throw new Error(data.error ?? "Analysis failed. Please try again.");
+      }
+
+      navigate("/phrases", { state: { form, thumbnail, analysisScore: data.score } });
+    } catch (error) {
+      setAnalyzeError(
+        error instanceof Error ? error.message : "Analysis failed. Please try again."
+      );
+    } finally {
       setAnalyzing(false);
-      navigate("/phrases", { state: { form, thumbnail } });
-    }, 1200);
+    }
   };
 
   const isReady = form.title.trim().length > 0;
@@ -119,7 +156,10 @@ export default function AnalyzePage() {
                   />
                   <button
                     type="button"
-                    onClick={() => setThumbnail(null)}
+                    onClick={() => {
+                      setThumbnail(null);
+                      setThumbnailFile(null);
+                    }}
                     className="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -269,6 +309,11 @@ export default function AnalyzePage() {
                 </>
               )}
             </button>
+            {analyzeError && (
+              <p className="text-sm text-red-500" role="alert">
+                {analyzeError}
+              </p>
+            )}
           </form>
 
           <p className="text-center text-xs text-gray-400 mt-6">
