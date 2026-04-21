@@ -78,15 +78,22 @@ export default function AnalyzePage() {
         body: payload,
       });
 
-      const data = (await response.json()) as { score?: number; error?: string };
+      const data = (await response.json()) as {
+        score?: number;
+        error?: string;
+      };
       if (!response.ok || typeof data.score !== "number") {
         throw new Error(data.error ?? "Analysis failed. Please try again.");
       }
 
-      navigate("/phrases", { state: { form, thumbnail, analysisScore: data.score } });
+      navigate("/phrases", {
+        state: { form, thumbnail, analysisScore: data.score },
+      });
     } catch (error) {
       setAnalyzeError(
-        error instanceof Error ? error.message : "Analysis failed. Please try again."
+        error instanceof Error
+          ? error.message
+          : "Analysis failed. Please try again."
       );
     } finally {
       setAnalyzing(false);

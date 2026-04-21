@@ -179,7 +179,9 @@ export default function ResultsPage() {
         id: "current-analysis",
         title: form.title,
         score:
-          typeof analysisScore === "number" ? analysisScore : mockContentItems[0].score,
+          typeof analysisScore === "number"
+            ? analysisScore
+            : mockContentItems[0].score,
         thumbnail: thumbnail ?? mockContentItems[0].thumbnail,
       }
     : null;
@@ -188,7 +190,9 @@ export default function ResultsPage() {
     : mockContentItems;
 
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
-  const [selectedItem, setSelectedItem] = useState<ContentItem>(contentItems[0]);
+  const [selectedItem, setSelectedItem] = useState<ContentItem>(
+    contentItems[0]
+  );
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [thumbnailsGenerated, setThumbnailsGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
