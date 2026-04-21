@@ -14,5 +14,9 @@
     "test": "npm --workspace frontend run test",
     "test:watch": "npm --workspace frontend run test:watch",
     "test:coverage": "npm --workspace frontend run test:coverage"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.104.0"
   }
 }
