@@ -16,6 +16,38 @@ function toScore(probability: number): number {
   return Math.round(clamped * 100);
 }
 
+function toTagArray(tags: string): string[] {
+  return tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function getFileExtension(file: File): string {
+  const fromName = file.name.split(".").pop()?.trim().toLowerCase();
+  if (fromName) {
+    return fromName;
+  }
+
+  const fromType = file.type.split("/").pop()?.trim().toLowerCase();
+  if (fromType === "jpeg") {
+    return "jpg";
+  }
+
+  return fromType || "png";
+}
+
+async function deleteEntry(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  entryId: string
+) {
+  await supabase.from("entries").delete().eq("entry_id", entryId);
+}
+
+function logSupabaseError(context: string, error: unknown) {
+  console.error(`[analyze] ${context}`, error);
+}
+
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -30,6 +62,7 @@ export async function POST(request: Request) {
   }
 
   const pythonApiBaseUrl = process.env.PYTHON_API_BASE_URL;
+  const thumbnailBucket = process.env.SUPABASE_THUMBNAIL_BUCKET || "thumbnails";
   if (!pythonApiBaseUrl) {
     return NextResponse.json(
       { error: "PYTHON_API_BASE_URL is not configured." },
@@ -40,6 +73,7 @@ export async function POST(request: Request) {
   const inbound = await request.formData();
   const title = String(inbound.get("title") ?? "").trim();
   const tags = String(inbound.get("tags") ?? "").trim();
+  const topic = String(inbound.get("topic") ?? "").trim();
   const subscriberCountRaw = String(inbound.get("subscriberCount") ?? "0");
   const thumbnail = inbound.get("thumbnail");
 
@@ -119,8 +153,88 @@ export async function POST(request: Request) {
   }
 
   const probability = Math.min(1, Math.max(0, probabilityValue));
+  const score = toScore(probability);
+  const normalizedSubscriberCount = Number.isFinite(subscriberCount)
+    ? Math.max(0, subscriberCount)
+    : null;
+
+  const { data: entry, error: entryError } = await supabase
+    .from("entries")
+    .insert({
+      user_id: user.id,
+      thumbnail_path: null,
+      title,
+      tags: toTagArray(tags),
+      topic: topic || null,
+      subscriber_count: normalizedSubscriberCount,
+    })
+    .select("entry_id")
+    .single();
+
+  if (entryError || !entry) {
+    logSupabaseError("entry insert failed", entryError);
+    return NextResponse.json(
+      { error: "Analysis completed, but saving the entry failed." },
+      { status: 500 }
+    );
+  }
+
+  const thumbnailPath = `${user.id}/${entry.entry_id}/thumbnail.${getFileExtension(thumbnail)}`;
+  const { error: thumbnailUploadError } = await supabase.storage
+    .from(thumbnailBucket)
+    .upload(thumbnailPath, thumbnail, {
+      cacheControl: "3600",
+      contentType: thumbnail.type || "image/png",
+      upsert: false,
+    });
+
+  if (thumbnailUploadError) {
+    logSupabaseError("thumbnail upload failed", thumbnailUploadError);
+    await deleteEntry(supabase, entry.entry_id);
+    return NextResponse.json(
+      { error: "Analysis completed, but uploading the thumbnail failed." },
+      { status: 500 }
+    );
+  }
+
+  const { error: entryUpdateError } = await supabase
+    .from("entries")
+    .update({ thumbnail_path: thumbnailPath })
+    .eq("entry_id", entry.entry_id);
+
+  if (entryUpdateError) {
+    logSupabaseError("entry thumbnail_path update failed", entryUpdateError);
+    await supabase.storage.from(thumbnailBucket).remove([thumbnailPath]);
+    await deleteEntry(supabase, entry.entry_id);
+    return NextResponse.json(
+      { error: "Analysis completed, but saving the thumbnail path failed." },
+      { status: 500 }
+    );
+  }
+
+  const { data: feedback, error: feedbackError } = await supabase
+    .from("feedback")
+    .insert({
+      entry_id: entry.entry_id,
+      score,
+    })
+    .select("feedback_id")
+    .single();
+
+  if (feedbackError || !feedback) {
+    logSupabaseError("feedback insert failed", feedbackError);
+    await supabase.storage.from(thumbnailBucket).remove([thumbnailPath]);
+    await deleteEntry(supabase, entry.entry_id);
+    return NextResponse.json(
+      { error: "Analysis completed, but saving the feedback failed." },
+      { status: 500 }
+    );
+  }
+
   return NextResponse.json({
     probability,
-    score: toScore(probability),
+    score,
+    entryId: entry.entry_id,
+    feedbackId: feedback.feedback_id,
   });
 }
