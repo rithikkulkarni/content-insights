@@ -212,6 +212,7 @@ export default function LandingPage() {
         </div>
       </footer>
       <TestSupabaseButton />
+      
     </div>
   );
 }
