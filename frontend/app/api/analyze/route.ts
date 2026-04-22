@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
 function getGroup(subscribers: number): number {
   if (subscribers >= 0 && subscribers < 1_000) return 1;
@@ -16,6 +17,18 @@ function toScore(probability: number): number {
 }
 
 export async function POST(request: Request) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to analyze content." },
+      { status: 401 }
+    );
+  }
+
   const pythonApiBaseUrl = process.env.PYTHON_API_BASE_URL;
   if (!pythonApiBaseUrl) {
     return NextResponse.json(

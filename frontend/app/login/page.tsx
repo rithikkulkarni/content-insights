@@ -1,22 +1,37 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouteNavigator } from "../lib/routeState";
+import { supabase } from "../lib/supabaseClient";
 import { BarChart2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const navigate = useRouteNavigator();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/analyze");
-    }, 800);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    navigate(searchParams.get("next") || "/analyze");
   };
 
   return (
@@ -68,6 +83,12 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {searchParams.get("confirmed") === "1" && (
+                <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  Your account was created. You can sign in now.
+                </p>
+              )}
+
               <div>
                 <label
                   className="block text-sm text-gray-700 mb-1.5"
@@ -137,6 +158,12 @@ export default function LoginPage() {
                   "Sign In"
                 )}
               </button>
+
+              {authError && (
+                <p className="text-sm text-red-500" role="alert">
+                  {authError}
+                </p>
+              )}
             </form>
 
             <div className="mt-6 relative">
@@ -175,5 +202,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
