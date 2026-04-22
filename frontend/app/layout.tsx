@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "../styles/index.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Content Insights",
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
