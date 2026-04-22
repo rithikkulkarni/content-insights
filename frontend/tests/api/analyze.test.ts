@@ -57,14 +57,12 @@ function createSupabaseMock(options?: {
     .mockResolvedValue(options?.entryDeleteResult ?? { error: null });
   const entriesUpdate = vi.fn().mockReturnValue({ eq: entriesUpdateEq });
   const entriesDelete = vi.fn().mockReturnValue({ eq: entriesDeleteEq });
-  const storageUpload = vi
-    .fn()
-    .mockResolvedValue(
-      options?.thumbnailUploadResult ?? {
-        data: { path: "unused" },
-        error: null,
-      }
-    );
+  const storageUpload = vi.fn().mockResolvedValue(
+    options?.thumbnailUploadResult ?? {
+      data: { path: "unused" },
+      error: null,
+    }
+  );
   const storageRemove = vi
     .fn()
     .mockResolvedValue(
