@@ -211,7 +211,7 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
-      {/* <TestSupabaseButton /> */}
+      <TestSupabaseButton />
     </div>
   );
 }
