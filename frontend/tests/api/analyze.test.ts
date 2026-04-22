@@ -43,24 +43,33 @@ function createSupabaseMock(options?: {
   const feedbackInsertSelect = vi
     .fn()
     .mockReturnValue({ single: feedbackInsertSingle });
-  const entriesInsert = vi.fn().mockReturnValue({ select: entriesInsertSelect });
+  const entriesInsert = vi
+    .fn()
+    .mockReturnValue({ select: entriesInsertSelect });
   const feedbackInsert = vi
     .fn()
     .mockReturnValue({ select: feedbackInsertSelect });
-  const entriesUpdateEq = vi.fn().mockResolvedValue(
-    options?.entryUpdateResult ?? { error: null }
-  );
-  const entriesDeleteEq = vi.fn().mockResolvedValue(
-    options?.entryDeleteResult ?? { error: null }
-  );
+  const entriesUpdateEq = vi
+    .fn()
+    .mockResolvedValue(options?.entryUpdateResult ?? { error: null });
+  const entriesDeleteEq = vi
+    .fn()
+    .mockResolvedValue(options?.entryDeleteResult ?? { error: null });
   const entriesUpdate = vi.fn().mockReturnValue({ eq: entriesUpdateEq });
   const entriesDelete = vi.fn().mockReturnValue({ eq: entriesDeleteEq });
-  const storageUpload = vi.fn().mockResolvedValue(
-    options?.thumbnailUploadResult ?? { data: { path: "unused" }, error: null }
-  );
-  const storageRemove = vi.fn().mockResolvedValue(
-    options?.storageRemoveResult ?? { data: [], error: null }
-  );
+  const storageUpload = vi
+    .fn()
+    .mockResolvedValue(
+      options?.thumbnailUploadResult ?? {
+        data: { path: "unused" },
+        error: null,
+      }
+    );
+  const storageRemove = vi
+    .fn()
+    .mockResolvedValue(
+      options?.storageRemoveResult ?? { data: [], error: null }
+    );
   const storageFrom = vi.fn().mockReturnValue({
     upload: storageUpload,
     remove: storageRemove,
