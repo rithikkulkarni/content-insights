@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouteNavigator } from "../lib/routeState";
+import { supabase } from "../lib/supabaseClient";
 import { BarChart2, Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 export default function SignupPage() {
@@ -8,18 +9,45 @@ export default function SignupPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
+    setAuthNotice(null);
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          full_name: form.name,
+        },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+
+    if (data.session) {
       navigate("/analyze");
-    }, 900);
+      return;
+    }
+
+    setAuthNotice(
+      "Your account was created in Supabase. Check your email to confirm it, then sign in."
+    );
+    setTimeout(() => navigate("/login?confirmed=1"), 1200);
   };
 
   const passwordStrength = (() => {
@@ -82,6 +110,12 @@ export default function SignupPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {authNotice && (
+                <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  {authNotice}
+                </p>
+              )}
+
               <div>
                 <label
                   className="block text-sm text-gray-700 mb-1.5"
@@ -183,6 +217,12 @@ export default function SignupPage() {
                   "Create Account"
                 )}
               </button>
+
+              {authError && (
+                <p className="text-sm text-red-500" role="alert">
+                  {authError}
+                </p>
+              )}
             </form>
 
             <div className="mt-4 flex flex-col gap-1.5">
