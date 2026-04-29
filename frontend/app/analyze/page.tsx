@@ -86,7 +86,7 @@ export default function AnalyzePage() {
         throw new Error(data.error ?? "Analysis failed. Please try again.");
       }
 
-      navigate("/phrases", {
+      navigate("/results", {
         state: { form, thumbnail, analysisScore: data.score },
       });
     } catch (error) {
