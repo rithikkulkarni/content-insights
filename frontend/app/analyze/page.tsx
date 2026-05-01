@@ -175,11 +175,12 @@ export default function AnalyzePage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
-  const [sessionDraft, setSessionDraft] = useState<AnalyzeDraft | null>(
-    null
-  );
-  const [recentAnalysisForm, setRecentAnalysisForm] = useState<AnalyzeForm | null>(null);
-  const [recentAnalysisThumbnailUrl, setRecentAnalysisThumbnailUrl] = useState<string | null>(null);
+  const [sessionDraft, setSessionDraft] = useState<AnalyzeDraft | null>(null);
+  const [recentAnalysisForm, setRecentAnalysisForm] =
+    useState<AnalyzeForm | null>(null);
+  const [recentAnalysisThumbnailUrl, setRecentAnalysisThumbnailUrl] = useState<
+    string | null
+  >(null);
   const [loadingAutofill, setLoadingAutofill] = useState(true);
   const [autofilling, setAutofilling] = useState(false);
 
