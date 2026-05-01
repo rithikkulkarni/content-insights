@@ -11,11 +11,15 @@ import {
   Users,
   Type,
   Sparkles,
+  History,
 } from "lucide-react";
+import { useAuthUser } from "../lib/useAuthUser";
+import UserAccountMenu from "../components/UserAccountMenu";
 
 export default function AnalyzePage() {
   const navigate = useRouteNavigator();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user, loading } = useAuthUser();
 
   const [form, setForm] = useState({
     title: "",
@@ -109,7 +113,7 @@ export default function AnalyzePage() {
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -122,9 +126,18 @@ export default function AnalyzePage() {
               Content Insights
             </span>
           </div>
-          <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer">
-            Learn More
-          </button>
+          {loading ? (
+            <span className="text-xs text-gray-400">Checking session...</span>
+          ) : user ? (
+            <UserAccountMenu user={user} />
+          ) : (
+            <button
+              onClick={() => navigate("/login?next=/analyze")}
+              className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
+            >
+              Log In
+            </button>
+          )}
         </div>
       </header>
 
@@ -142,6 +155,27 @@ export default function AnalyzePage() {
               Provide your content details and get AI-powered insights to
               improve performance.
             </p>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => navigate("/results")}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <History className="w-4 h-4" />
+                Analyzed Videos
+              </button>
+            ) : (
+              !loading && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/login?next=/results")}
+                  className="mt-4 inline-flex items-center gap-2 text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
+                >
+                  <History className="w-4 h-4" />
+                  Sign in to view previous analyses
+                </button>
+              )
+            )}
           </div>
 
           <form onSubmit={handleAnalyze} className="flex flex-col gap-5">

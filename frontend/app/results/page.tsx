@@ -1,25 +1,23 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, type ElementType } from "react";
+import { useEffect, useMemo, useState, type ElementType } from "react";
 import { useRouteNavigator, useRouteState } from "../lib/routeState";
 import {
   AlertCircle,
+  ArrowLeft,
   BarChart2,
   CheckCircle,
   ChevronDown,
   CreditCard,
   Grid3X3,
-  History,
   ImageIcon,
   List,
-  LogOut,
-  RotateCcw,
-  Settings,
   Sparkles,
   Tag,
   Type,
-  User,
 } from "lucide-react";
 import { mockFeedback, mockGeneratedThumbnails } from "../lib/mockData";
+import { useAuthUser } from "../lib/useAuthUser";
+import UserAccountMenu from "../components/UserAccountMenu";
 
 type AnalysisForm = {
   title: string;
@@ -196,12 +194,10 @@ export default function ResultsPage() {
   const [recentError, setRecentError] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [thumbnailsGenerated, setThumbnailsGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [thumbnailView, setThumbnailView] = useState<ThumbnailView>("grid");
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user, loading } = useAuthUser();
 
   useEffect(() => {
     const loadRecentAnalyses = async () => {
@@ -254,19 +250,6 @@ export default function ResultsPage() {
     }
   }, [contentItems, selectedItemId]);
 
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const selectedItem =
     contentItems.find((item) => item.id === selectedItemId) ?? contentItems[0];
   const displayedTitle = selectedItem?.title ?? "No title provided";
@@ -289,8 +272,8 @@ export default function ResultsPage() {
             onClick={() => navigate("/analyze")}
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Revise
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Analyze
           </button>
 
           <div className="flex items-center gap-4">
@@ -317,47 +300,18 @@ export default function ResultsPage() {
               <CreditCard className="w-3.5 h-3.5" />
               Get Credits
             </button>
-
-            <div className="relative" ref={dropdownRef}>
+            {loading ? (
+              <span className="text-xs text-gray-400">Checking session...</span>
+            ) : user ? (
+              <UserAccountMenu user={user} />
+            ) : (
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+                onClick={() => navigate("/login?next=/results")}
+                className="text-xs text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <User className="w-4 h-4 text-indigo-600" />
-                </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
-                />
+                Log In
               </button>
-
-              {dropdownOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-30">
-                  {[
-                    { icon: User, label: "Profile" },
-                    { icon: Settings, label: "Settings" },
-                    { icon: History, label: "History" },
-                  ].map(({ icon: Icon, label }) => (
-                    <button
-                      key={label}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Icon className="w-4 h-4 text-gray-400" />
-                      {label}
-                    </button>
-                  ))}
-                  <div className="border-t border-gray-100 my-1" />
-                  <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                    onClick={() => navigate("/")}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </header>

@@ -7,17 +7,21 @@ import {
   TrendingUp,
   Star,
   CheckCircle2,
+  Sparkles,
+  History,
 } from "lucide-react";
-import TestSupabaseButton from "./test-supabase-button";
+import { useAuthUser } from "./lib/useAuthUser";
+import UserAccountMenu from "./components/UserAccountMenu";
 
 export default function LandingPage() {
   const navigate = useRouteNavigator();
+  const { user, loading } = useAuthUser();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="border-b border-gray-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-center">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center">
               <BarChart2 className="w-4 h-4 text-white" />
@@ -26,6 +30,23 @@ export default function LandingPage() {
               Content Insights
             </span>
           </div>
+          {loading ? (
+            <span className="text-xs text-gray-400">Checking session...</span>
+          ) : user ? (
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:block text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-medium">
+                Signed in
+              </span>
+              <UserAccountMenu user={user} />
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm text-indigo-600 font-medium hover:text-indigo-700 transition-colors cursor-pointer"
+            >
+              Log In
+            </button>
+          )}
         </div>
       </header>
 
@@ -82,18 +103,46 @@ export default function LandingPage() {
 
             {/* Right: Auth buttons */}
             <div className="w-full max-w-xs flex flex-col gap-3">
-              <button
-                onClick={() => navigate("/login")}
-                className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm cursor-pointer"
-              >
-                Log In
-              </button>
-              <button
-                onClick={() => navigate("/signup")}
-                className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm cursor-pointer"
-              >
-                Don&apos;t have an account? Get started!
-              </button>
+              {loading ? (
+                <button
+                  disabled
+                  className="w-full py-3 px-6 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium shadow-sm"
+                >
+                  Checking session...
+                </button>
+              ) : user ? (
+                <>
+                  <button
+                    onClick={() => navigate("/analyze")}
+                    className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Analyze Your Videos
+                  </button>
+                  <button
+                    onClick={() => navigate("/results")}
+                    className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <History className="w-4 h-4" />
+                    View previous analyses
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium shadow-sm cursor-pointer"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => navigate("/signup")}
+                    className="w-full py-3 px-6 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium text-center shadow-sm cursor-pointer"
+                  >
+                    Don&apos;t have an account? Get started!
+                  </button>
+                </>
+              )}
 
               {/* Social proof */}
               <div className="mt-4 pt-4 border-t border-gray-100 text-center">
@@ -187,10 +236,10 @@ export default function LandingPage() {
             Join thousands of creators who use Content Insights to grow smarter.
           </p>
           <button
-            onClick={() => navigate("/signup")}
+            onClick={() => navigate(user ? "/analyze" : "/signup")}
             className="px-8 py-3 bg-white text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors shadow-sm cursor-pointer"
           >
-            Start for free
+            {user ? "Analyze Your Videos" : "Start for free"}
           </button>
         </div>
       </section>
