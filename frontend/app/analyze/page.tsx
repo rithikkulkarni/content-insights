@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouteNavigator } from "../lib/routeState";
 import {
   BarChart2,
@@ -16,22 +16,207 @@ import {
 import { useAuthUser } from "../lib/useAuthUser";
 import UserAccountMenu from "../components/UserAccountMenu";
 
+type AnalyzeForm = {
+  title: string;
+  tags: string;
+  topic: string;
+  subscriberCount: string;
+};
+
+type AnalyzeDraft = {
+  form: AnalyzeForm;
+  thumbnailDataUrl: string | null;
+};
+
+type RecentAnalysisItem = {
+  title: string;
+  tags: string[];
+  topic: string;
+  subscriberCount: number | null;
+  thumbnailUrl: string | null;
+};
+
+const ANALYZE_DRAFT_STORAGE_KEY = "__content_insights_analyze_draft_v1__";
+const LAST_ANALYSIS_STORAGE_KEY =
+  "__content_insights_last_analysis_inputs_v1__";
+
+function createEmptyForm(): AnalyzeForm {
+  return {
+    title: "",
+    tags: "",
+    topic: "",
+    subscriberCount: "",
+  };
+}
+
+function hasAnyInput(form: AnalyzeForm): boolean {
+  return (
+    form.title.trim().length > 0 ||
+    form.tags.trim().length > 0 ||
+    form.topic.trim().length > 0 ||
+    form.subscriberCount.trim().length > 0
+  );
+}
+
+function hasDraftContent(draft: AnalyzeDraft): boolean {
+  return hasAnyInput(draft.form) || Boolean(draft.thumbnailDataUrl);
+}
+
+function normalizeForm(input: Partial<AnalyzeForm>): AnalyzeForm {
+  return {
+    title: input.title ?? "",
+    tags: input.tags ?? "",
+    topic: input.topic ?? "",
+    subscriberCount: input.subscriberCount ?? "",
+  };
+}
+
+function formFromRecent(item: RecentAnalysisItem): AnalyzeForm {
+  return normalizeForm({
+    title: item.title,
+    tags: (item.tags ?? []).join(", "),
+    topic: item.topic ?? "",
+    subscriberCount:
+      typeof item.subscriberCount === "number"
+        ? String(Math.max(0, item.subscriberCount))
+        : "",
+  });
+}
+
+function parseStoredDraft(raw: string | null): AnalyzeDraft | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as
+      | AnalyzeForm
+      | AnalyzeDraft
+      | { form?: Partial<AnalyzeForm>; thumbnailDataUrl?: string | null };
+    const hasFormField =
+      typeof parsed === "object" && parsed !== null && "form" in parsed;
+    const formCandidate =
+      hasFormField && parsed.form ? parsed.form : (parsed as AnalyzeForm);
+    const normalizedForm = normalizeForm(formCandidate);
+    const thumbnailDataUrl =
+      hasFormField && typeof parsed.thumbnailDataUrl === "string"
+        ? parsed.thumbnailDataUrl
+        : null;
+
+    const draft: AnalyzeDraft = {
+      form: normalizedForm,
+      thumbnailDataUrl,
+    };
+
+    return hasDraftContent(draft) ? draft : null;
+  } catch {
+    return null;
+  }
+}
+
+async function dataUrlToFile(
+  dataUrl: string,
+  fileName: string
+): Promise<File | null> {
+  try {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], fileName, {
+      type: blob.type || "image/png",
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function remoteImageToFile(
+  imageUrl: string,
+  fileName: string
+): Promise<{ file: File; preview: string } | null> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      return null;
+    }
+
+    const blob = await response.blob();
+    const file = new File([blob], fileName, {
+      type: blob.type || "image/png",
+    });
+
+    const readerResult = await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string) ?? null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+
+    if (!readerResult) {
+      return null;
+    }
+
+    return {
+      file,
+      preview: readerResult,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function AnalyzePage() {
   const navigate = useRouteNavigator();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, loading } = useAuthUser();
 
-  const [form, setForm] = useState({
-    title: "",
-    tags: "",
-    topic: "",
-    subscriberCount: "",
-  });
+  const [form, setForm] = useState<AnalyzeForm>(createEmptyForm);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [sessionDraft, setSessionDraft] = useState<AnalyzeDraft | null>(
+    null
+  );
+  const [recentAnalysisForm, setRecentAnalysisForm] = useState<AnalyzeForm | null>(null);
+  const [recentAnalysisThumbnailUrl, setRecentAnalysisThumbnailUrl] = useState<string | null>(null);
+  const [loadingAutofill, setLoadingAutofill] = useState(true);
+  const [autofilling, setAutofilling] = useState(false);
+
+  const persistDraft = (
+    nextForm: AnalyzeForm,
+    nextThumbnailDataUrl: string | null = thumbnail
+  ) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const nextDraft: AnalyzeDraft = {
+      form: nextForm,
+      thumbnailDataUrl: nextThumbnailDataUrl,
+    };
+
+    if (!hasDraftContent(nextDraft)) {
+      window.sessionStorage.removeItem(ANALYZE_DRAFT_STORAGE_KEY);
+      setSessionDraft(null);
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      ANALYZE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        form: nextDraft.form,
+        thumbnailDataUrl: nextDraft.thumbnailDataUrl,
+        updatedAt: new Date().toISOString(),
+      })
+    );
+    setSessionDraft(nextDraft);
+  };
+
+  const updateForm = (nextForm: AnalyzeForm) => {
+    setForm(nextForm);
+    persistDraft(nextForm);
+  };
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -42,7 +227,11 @@ export default function AnalyzePage() {
     setAnalyzeError(null);
     setThumbnailFile(file);
     const reader = new FileReader();
-    reader.onload = (e) => setThumbnail(e.target?.result as string);
+    reader.onload = (e) => {
+      const preview = e.target?.result as string;
+      setThumbnail(preview);
+      persistDraft(form, preview);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -56,7 +245,15 @@ export default function AnalyzePage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const nextForm = {
+        ...prev,
+        [name]: value,
+      };
+      persistDraft(nextForm);
+      return nextForm;
+    });
   };
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -90,6 +287,15 @@ export default function AnalyzePage() {
         throw new Error(data.error ?? "Analysis failed. Please try again.");
       }
 
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(ANALYZE_DRAFT_STORAGE_KEY);
+        setSessionDraft(null);
+        window.localStorage.setItem(
+          LAST_ANALYSIS_STORAGE_KEY,
+          JSON.stringify(form)
+        );
+      }
+
       navigate("/results", {
         state: { form, thumbnail, analysisScore: data.score },
       });
@@ -105,6 +311,120 @@ export default function AnalyzePage() {
   };
 
   const isReady = form.title.trim().length > 0;
+  const hasAutofillSource =
+    sessionDraft !== null || recentAnalysisForm !== null;
+
+  const handleAutofill = async () => {
+    const draftSource = sessionDraft;
+    const formSource = draftSource?.form ?? recentAnalysisForm;
+    if (!formSource) {
+      setAnalyzeError("No previous inputs available to autofill yet.");
+      return;
+    }
+
+    setAutofilling(true);
+    setAnalyzeError(null);
+    updateForm(formSource);
+
+    // Priority: session draft thumbnail first, then most-recent analyzed thumbnail.
+    const sessionThumbnail = draftSource?.thumbnailDataUrl ?? null;
+    if (sessionThumbnail) {
+      setThumbnail(sessionThumbnail);
+      const restoredFile = await dataUrlToFile(
+        sessionThumbnail,
+        "autofill-thumbnail.png"
+      );
+      setThumbnailFile(restoredFile);
+      setAutofilling(false);
+      return;
+    }
+
+    if (recentAnalysisThumbnailUrl) {
+      const restored = await remoteImageToFile(
+        recentAnalysisThumbnailUrl,
+        "recent-analysis-thumbnail.png"
+      );
+      if (restored) {
+        setThumbnail(restored.preview);
+        setThumbnailFile(restored.file);
+        persistDraft(formSource, restored.preview);
+      }
+    }
+
+    setAutofilling(false);
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const draft = parseStoredDraft(
+      window.sessionStorage.getItem(ANALYZE_DRAFT_STORAGE_KEY)
+    );
+    if (draft) {
+      setSessionDraft(draft);
+    }
+
+    const localLastAnalysis = parseStoredDraft(
+      window.localStorage.getItem(LAST_ANALYSIS_STORAGE_KEY)
+    );
+    if (localLastAnalysis) {
+      setRecentAnalysisForm(localLastAnalysis.form);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMostRecentAnalysis = async () => {
+      if (!user) {
+        setLoadingAutofill(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/analyses/recent", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as {
+          items?: RecentAnalysisItem[];
+        };
+        const first = Array.isArray(data.items) ? data.items[0] : null;
+        if (!first || !isMounted) {
+          return;
+        }
+
+        const nextRecentForm = formFromRecent(first);
+        setRecentAnalysisForm(nextRecentForm);
+        setRecentAnalysisThumbnailUrl(first.thumbnailUrl ?? null);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(
+            LAST_ANALYSIS_STORAGE_KEY,
+            JSON.stringify(nextRecentForm)
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingAutofill(false);
+        }
+      }
+    };
+
+    void loadMostRecentAnalysis();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loading, user]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -156,14 +476,16 @@ export default function AnalyzePage() {
               improve performance.
             </p>
             {user ? (
-              <button
-                type="button"
-                onClick={() => navigate("/results")}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 font-medium hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <History className="w-4 h-4" />
-                Analyzed Videos
-              </button>
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate("/results")}
+                  className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm text-indigo-700 font-medium hover:bg-indigo-50 transition-colors cursor-pointer"
+                >
+                  <History className="w-4 h-4" />
+                  Analyzed Videos
+                </button>
+              </div>
             ) : (
               !loading && (
                 <button
@@ -176,6 +498,15 @@ export default function AnalyzePage() {
                 </button>
               )
             )}
+            <button
+              type="button"
+              onClick={handleAutofill}
+              disabled={loadingAutofill || autofilling || !hasAutofillSource}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-900 font-medium hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <History className="w-4 h-4" />
+              {autofilling ? "Autofilling..." : "Autofill Last Inputs?"}
+            </button>
           </div>
 
           <form onSubmit={handleAnalyze} className="flex flex-col gap-5">
@@ -200,6 +531,7 @@ export default function AnalyzePage() {
                     onClick={() => {
                       setThumbnail(null);
                       setThumbnailFile(null);
+                      persistDraft(form, null);
                     }}
                     className="absolute top-2 right-2 w-7 h-7 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
                   >
