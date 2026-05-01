@@ -90,7 +90,9 @@ export default function UserAccountMenu({ user }: UserAccountMenuProps) {
       {open && (
         <div className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-30">
           <div className="px-4 pb-2 mb-1 border-b border-gray-100">
-            <p className="text-sm text-gray-900 font-medium truncate">{displayName}</p>
+            <p className="text-sm text-gray-900 font-medium truncate">
+              {displayName}
+            </p>
             {displayEmail && (
               <p className="text-xs text-gray-500 truncate">{displayEmail}</p>
             )}
