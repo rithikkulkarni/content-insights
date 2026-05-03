@@ -138,21 +138,73 @@ function buildAnalyzeRequest() {
 
 describe("POST /api/analyze", () => {
   let supabase: SupabaseMock;
+  const geminiFeedback = {
+    thumbnail: {
+      headline: "Boost contrast and focal clarity",
+      details:
+        "Your thumbnail concept is clear, but stronger hierarchy can improve first-glance readability.",
+      tips: [
+        "Increase text contrast over the background.",
+        "Emphasize one facial or object focal point.",
+        "Reduce competing visual elements.",
+      ],
+    },
+    title: {
+      headline: "Strong concept, sharper hook needed",
+      details:
+        "The title communicates intent, but it could promise a clearer viewer outcome.",
+      tips: [
+        "Lead with a specific transformation benefit.",
+        "Use one urgency or emotion word.",
+        "Trim filler to tighten pacing.",
+      ],
+    },
+    tags: {
+      headline: "Expand long-tail keyword intent",
+      details:
+        "Your tag set is relevant, but adding more intent-rich long-tail variants can improve discovery.",
+      tips: [
+        "Add niche-specific search phrase variants.",
+        "Mirror core title keywords in tags.",
+        "Include audience intent terms.",
+      ],
+    },
+  };
 
   beforeEach(() => {
     process.env.PYTHON_API_BASE_URL = "https://python.example";
+    process.env.GEMINI_API_KEY = "gemini-test-key";
     delete process.env.SUPABASE_THUMBNAIL_BUCKET;
 
     supabase = createSupabaseMock();
     createSupabaseServerClient.mockResolvedValue(supabase);
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ probability: 0.81 }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      )
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ probability: 0.81 }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              candidates: [
+                {
+                  content: {
+                    parts: [{ text: JSON.stringify(geminiFeedback) }],
+                  },
+                },
+              ],
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }
+          )
+        )
     );
   });
 
@@ -161,8 +213,19 @@ describe("POST /api/analyze", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(global.fetch).toHaveBeenCalledWith(
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      1,
       "https://python.example/predict/group2",
+      expect.objectContaining({
+        method: "POST",
+        cache: "no-store",
+      })
+    );
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=gemini-test-key"
+      ),
       expect.objectContaining({
         method: "POST",
         cache: "no-store",
@@ -195,12 +258,16 @@ describe("POST /api/analyze", () => {
     expect(supabase.spies.feedbackInsert).toHaveBeenCalledWith({
       entry_id: "entry-123",
       score: 81,
+      thumbnail_feedback: JSON.stringify(geminiFeedback.thumbnail),
+      title_feedback: JSON.stringify(geminiFeedback.title),
+      tag_feedback: [JSON.stringify(geminiFeedback.tags)],
     });
     expect(body).toEqual({
       probability: 0.81,
       score: 81,
       entryId: "entry-123",
       feedbackId: "feedback-123",
+      feedback: geminiFeedback,
     });
   });
 
