@@ -12,6 +12,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
+  Check,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -35,7 +36,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { mockFeedback, mockGeneratedThumbnails } from "./lib/mockData";
+import { mockGeneratedThumbnails } from "./lib/mockData";
 import { supabase } from "./lib/supabaseClient";
 import {
   DEFAULT_THEME,
@@ -54,6 +55,18 @@ type AnalyzeForm = {
   subscriberCount: string;
 };
 
+type FeedbackSection = {
+  headline: string;
+  details: string;
+  tips: [string, string, string];
+};
+
+type AnalysisFeedback = {
+  thumbnail: FeedbackSection;
+  title: FeedbackSection;
+  tags: FeedbackSection;
+};
+
 type RecentAnalysisItem = {
   id: string;
   title: string;
@@ -62,6 +75,7 @@ type RecentAnalysisItem = {
   subscriberCount: number | null;
   createdAt: string;
   score: number | null;
+  feedback: AnalysisFeedback;
   thumbnailUrl: string | null;
 };
 
@@ -105,6 +119,70 @@ function getScoreLabel(score: number | null): string {
 
   return "Needs Work";
 }
+
+function isFeedbackSection(value: unknown): value is FeedbackSection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const headline = (value as { headline?: unknown }).headline;
+  const details = (value as { details?: unknown }).details;
+  const tips = (value as { tips?: unknown }).tips;
+  return (
+    typeof headline === "string" &&
+    typeof details === "string" &&
+    Array.isArray(tips) &&
+    tips.length === 3 &&
+    tips.every((tip) => typeof tip === "string")
+  );
+}
+
+function isAnalysisFeedback(value: unknown): value is AnalysisFeedback {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const root = value as {
+    thumbnail?: unknown;
+    title?: unknown;
+    tags?: unknown;
+  };
+  return (
+    isFeedbackSection(root.thumbnail) &&
+    isFeedbackSection(root.title) &&
+    isFeedbackSection(root.tags)
+  );
+}
+
+const FALLBACK_FEEDBACK: AnalysisFeedback = {
+  thumbnail: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate thumbnail feedback.",
+    tips: [
+      "Use stronger contrast around key elements.",
+      "Keep text short and easy to read.",
+      "Highlight one clear focal point.",
+    ],
+  },
+  title: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate title feedback.",
+    tips: [
+      "Lead with the clearest audience outcome.",
+      "Use stronger emotional framing.",
+      "Reduce filler words for clarity.",
+    ],
+  },
+  tags: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate tags feedback.",
+    tips: [
+      "Add long-tail intent-driven phrases.",
+      "Align tags with title wording.",
+      "Include niche and audience keywords.",
+    ],
+  },
+};
 
 function groupHistory(items: RecentAnalysisItem[]): HistorySection[] {
   const today = new Date();
@@ -226,18 +304,28 @@ function FeedbackCard({
   title,
   summary,
   details,
+  tips,
   thumbnailMode,
   generatedThumbnail,
   onGenerate,
+  showGenerateButton,
+  generateDisabled,
+  generateBusy,
+  generateLabel = "Generate Suggestion",
   onThumbnailClick,
 }: {
   icon: ElementType;
   title: string;
   summary: string;
   details: string;
+  tips?: string[];
   thumbnailMode?: boolean;
   generatedThumbnail?: string | null;
   onGenerate?: () => void;
+  showGenerateButton?: boolean;
+  generateDisabled?: boolean;
+  generateBusy?: boolean;
+  generateLabel?: string;
   onThumbnailClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -290,9 +378,24 @@ function FeedbackCard({
                   alignItems: "start",
                 }}
               >
-                <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
-                  {details}
-                </p>
+                <div className="min-w-0">
+                  <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                    {details}
+                  </p>
+                  {tips && tips.length > 0 && (
+                    <ul className="mt-4 space-y-2">
+                      {tips.map((tip, index) => (
+                        <li
+                          key={`${title}-tip-${index}`}
+                          className="flex items-start gap-2 text-[14px] leading-relaxed text-[var(--ci-text-soft)]"
+                        >
+                          <Check className="w-4 h-4 text-[var(--ci-accent-soft)] mt-[2px] flex-shrink-0" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <div className="flex flex-col gap-1">
                   <div
                     className="rounded-xl border-2 border-dashed border-[var(--ci-border)] overflow-hidden w-full"
@@ -314,11 +417,20 @@ function FeedbackCard({
                       <button
                         type="button"
                         onClick={onGenerate}
-                        className="w-full h-full flex items-center justify-center gap-2 text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] transition-colors cursor-pointer"
+                        disabled={generateDisabled ?? !onGenerate}
+                        className={`w-full h-full flex items-center justify-center gap-2 transition-colors ${
+                          (generateDisabled ?? !onGenerate)
+                            ? "text-[var(--ci-text-subtle)] cursor-not-allowed opacity-60"
+                            : "text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] cursor-pointer"
+                        }`}
                         style={{ fontWeight: 500 }}
                       >
-                        <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
-                        <span className="text-[14px]">Generate Suggestion</span>
+                        {generateBusy ? (
+                          <LoaderCircle className="w-4 h-4 animate-spin text-[var(--ci-accent-soft)]" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                        )}
+                        <span className="text-[14px]">{generateLabel}</span>
                       </button>
                     )}
                   </div>
@@ -330,21 +442,53 @@ function FeedbackCard({
                 </div>
               </div>
             ) : (
-              <div className="mt-4">
-                <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
-                  {details}
-                </p>
-                <div className="flex justify-end mt-4">
-                  <button
-                    type="button"
-                    onClick={onGenerate}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--ci-border)] text-[14px] text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] transition-colors cursor-pointer"
-                    style={{ fontWeight: 500 }}
-                  >
-                    <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
-                    Generate Suggestion
-                  </button>
+              <div
+                className={`mt-4 ${
+                  showGenerateButton
+                    ? "sm:flex sm:items-stretch sm:justify-between sm:gap-4"
+                    : ""
+                }`}
+              >
+                <div className={showGenerateButton ? "min-w-0 flex-1" : ""}>
+                  <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                    {details}
+                  </p>
+                  {tips && tips.length > 0 && (
+                    <ul className="mt-4 space-y-2">
+                      {tips.map((tip, index) => (
+                        <li
+                          key={`${title}-tip-${index}`}
+                          className="flex items-start gap-2 text-[14px] leading-relaxed text-[var(--ci-text-soft)]"
+                        >
+                          <Check className="w-4 h-4 text-[var(--ci-accent-soft)] mt-[2px] flex-shrink-0" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
+                {showGenerateButton && (
+                  <div className="mt-4 sm:mt-0 sm:ml-2 sm:flex sm:flex-col sm:justify-end sm:flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={onGenerate}
+                      disabled={generateDisabled ?? !onGenerate}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--ci-border)] text-[14px] transition-colors ${
+                        (generateDisabled ?? !onGenerate)
+                          ? "opacity-60 cursor-not-allowed text-[var(--ci-text-subtle)]"
+                          : "text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] cursor-pointer"
+                      }`}
+                      style={{ fontWeight: 500 }}
+                    >
+                      {generateBusy ? (
+                        <LoaderCircle className="w-4 h-4 animate-spin text-[var(--ci-accent-soft)]" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                      )}
+                      {generateLabel}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -407,9 +551,6 @@ function UnifiedWorkspacePage() {
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [thumbnailView, setThumbnailView] = useState<ThumbnailView>("grid");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [generatedCardThumbnail, setGeneratedCardThumbnail] = useState<
-    string | null
-  >(null);
   const [imageModal, setImageModal] = useState<{
     src: string;
     alt: string;
@@ -481,6 +622,10 @@ function UnifiedWorkspacePage() {
       : thumbnailPreview;
   const displayedScore =
     workspaceMode === "analysis" ? (selectedAnalysis?.score ?? null) : null;
+  const displayedFeedback =
+    workspaceMode === "analysis"
+      ? (selectedAnalysis?.feedback ?? FALLBACK_FEEDBACK)
+      : FALLBACK_FEEDBACK;
 
   const closeAuthModal = () => {
     setAuthModalMode(null);
@@ -689,12 +834,16 @@ function UnifiedWorkspacePage() {
       const data = (await response.json()) as {
         entryId?: string;
         score?: number;
+        feedback?: unknown;
         error?: string;
       };
 
       if (!response.ok || typeof data.score !== "number") {
         throw new Error(data.error ?? "Analysis failed. Please try again.");
       }
+      const feedback = isAnalysisFeedback(data.feedback)
+        ? data.feedback
+        : FALLBACK_FEEDBACK;
 
       const parsedSubscriberCount = Number.parseInt(form.subscriberCount, 10);
       const temporaryItem: RecentAnalysisItem = {
@@ -707,6 +856,7 @@ function UnifiedWorkspacePage() {
           : null,
         createdAt: new Date().toISOString(),
         score: data.score,
+        feedback,
         thumbnailUrl: thumbnailPreview,
       };
 
@@ -1393,34 +1543,29 @@ function UnifiedWorkspacePage() {
                       <FeedbackCard
                         icon={ImageIcon}
                         title="Thumbnail Feedback"
-                        summary={mockFeedback.thumbnail.headline}
-                        details={mockFeedback.thumbnail.details}
+                        summary={displayedFeedback.thumbnail.headline}
+                        details={displayedFeedback.thumbnail.details}
+                        tips={displayedFeedback.thumbnail.tips}
                         thumbnailMode
-                        generatedThumbnail={generatedCardThumbnail}
-                        onGenerate={() =>
-                          setGeneratedCardThumbnail(
-                            mockGeneratedThumbnails[0] ?? null
-                          )
-                        }
-                        onThumbnailClick={() =>
-                          generatedCardThumbnail &&
-                          setImageModal({
-                            src: generatedCardThumbnail,
-                            alt: "Generated thumbnail",
-                          })
-                        }
+                        generateDisabled
                       />
                       <FeedbackCard
                         icon={Type}
                         title="Title Feedback"
-                        summary={mockFeedback.title.headline}
-                        details={mockFeedback.title.details}
+                        summary={displayedFeedback.title.headline}
+                        details={displayedFeedback.title.details}
+                        tips={displayedFeedback.title.tips}
+                        showGenerateButton
+                        generateDisabled
                       />
                       <FeedbackCard
                         icon={Tag}
                         title="Tags Feedback"
-                        summary={mockFeedback.tags.headline}
-                        details={mockFeedback.tags.details}
+                        summary={displayedFeedback.tags.headline}
+                        details={displayedFeedback.tags.details}
+                        tips={displayedFeedback.tags.tips}
+                        showGenerateButton
+                        generateDisabled
                       />
 
                       <div className="pt-8">
