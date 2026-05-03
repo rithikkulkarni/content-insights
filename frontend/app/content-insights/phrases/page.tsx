@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function LegacyPhrasesPage() {
-  redirect("/phrases");
+  redirect("/?view=analysis");
 }

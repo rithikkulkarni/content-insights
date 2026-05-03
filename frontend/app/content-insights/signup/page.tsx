@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function LegacySignupPage() {
-  redirect("/signup");
+  redirect("/?auth=signup");
 }
