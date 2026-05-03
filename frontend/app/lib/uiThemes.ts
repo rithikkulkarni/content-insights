@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 export type ThemeName = "green" | "red" | "blue" | "gray";
 
-export const DEFAULT_THEME: ThemeName = "green";
+export const DEFAULT_THEME: ThemeName = "gray";
 export const THEME_STORAGE_KEY = "__content_insights_ui_theme_v1__";
 
 type ThemePalette = Record<string, string>;
