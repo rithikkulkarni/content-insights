@@ -193,7 +193,10 @@ function ScoreRing({ score }: { score: number | null }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-3xl text-[var(--ci-text-primary)]" style={{ fontWeight: 700 }}>
+        <span
+          className="text-3xl text-[var(--ci-text-primary)]"
+          style={{ fontWeight: 700 }}
+        >
           {typeof score === "number" ? score : "--"}
         </span>
         <span className="text-xs text-[var(--ci-text-subtle)]">/ 100</span>
@@ -758,7 +761,9 @@ function UnifiedWorkspacePage() {
               </button>
             </div>
 
-            <div className={`${sidebarExpanded ? "px-4 pt-4" : "px-2 pt-4 flex justify-center"}`}>
+            <div
+              className={`${sidebarExpanded ? "px-4 pt-4" : "px-2 pt-4 flex justify-center"}`}
+            >
               <button
                 type="button"
                 onClick={resetForNewAnalysis}
@@ -768,7 +773,9 @@ function UnifiedWorkspacePage() {
                     : "w-9 h-9 rounded-xl border border-[var(--ci-control-border)] hover:bg-[var(--ci-control-hover)]"
                 }`}
               >
-                <Plus className={`${sidebarExpanded ? "w-5 h-5" : "w-4 h-4"}`} />
+                <Plus
+                  className={`${sidebarExpanded ? "w-5 h-5" : "w-4 h-4"}`}
+                />
                 <span
                   className={`overflow-hidden whitespace-nowrap transition-all duration-200 ${
                     sidebarExpanded
@@ -790,7 +797,9 @@ function UnifiedWorkspacePage() {
               }`}
             >
               {userLoading ? (
-                <p className="text-sm text-[var(--ci-text-muted)]">Checking session...</p>
+                <p className="text-sm text-[var(--ci-text-muted)]">
+                  Checking session...
+                </p>
               ) : !user ? (
                 <p className="text-sm text-[var(--ci-text-muted)] leading-relaxed">
                   Sign in to save analyses and revisit them in your sidebar
@@ -801,7 +810,9 @@ function UnifiedWorkspacePage() {
                   Loading your analyses...
                 </p>
               ) : historyError ? (
-                <p className="text-sm text-[var(--ci-error-text)]">{historyError}</p>
+                <p className="text-sm text-[var(--ci-error-text)]">
+                  {historyError}
+                </p>
               ) : historySections.length === 0 ? (
                 <p className="text-sm text-[var(--ci-text-muted)]">
                   No analyses yet. Create your first one.
@@ -881,7 +892,10 @@ function UnifiedWorkspacePage() {
                     <div className="flex items-center gap-2.5">
                       {(
                         Object.entries(THEME_CONFIG) as Array<
-                          [ThemeName, { label: string; colors: Record<string, string> }]
+                          [
+                            ThemeName,
+                            { label: string; colors: Record<string, string> },
+                          ]
                         >
                       ).map(([key, value]) => {
                         const isActive = themeName === key;
@@ -1078,7 +1092,8 @@ function UnifiedWorkspacePage() {
                         style={{ fontWeight: 600 }}
                       >
                         <Type className="w-5 h-5" />
-                        VIDEO TITLE <span className="text-[var(--ci-required)]">*</span>
+                        VIDEO TITLE{" "}
+                        <span className="text-[var(--ci-required)]">*</span>
                       </label>
                       <input
                         type="text"
@@ -1140,11 +1155,11 @@ function UnifiedWorkspacePage() {
                           value={form.topic}
                           onChange={(event) => {
                             setForm((prev) => ({
-                            ...prev,
-                            topic: event.target.value,
-                          }));
-                        }}
-                        placeholder="e.g. YouTube Growth"
+                              ...prev,
+                              topic: event.target.value,
+                            }));
+                          }}
+                          placeholder="e.g. YouTube Growth"
                           className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                         />
                       </div>
@@ -1163,11 +1178,11 @@ function UnifiedWorkspacePage() {
                           value={form.subscriberCount}
                           onChange={(event) => {
                             setForm((prev) => ({
-                            ...prev,
-                            subscriberCount: event.target.value,
-                          }));
-                        }}
-                        placeholder="e.g. 5200"
+                              ...prev,
+                              subscriberCount: event.target.value,
+                            }));
+                          }}
+                          placeholder="e.g. 5200"
                           className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                         />
                       </div>
@@ -1193,7 +1208,10 @@ function UnifiedWorkspacePage() {
                     </button>
 
                     {analyzeError && (
-                      <p className="text-[14px] text-[var(--ci-error)]" role="alert">
+                      <p
+                        className="text-[14px] text-[var(--ci-error)]"
+                        role="alert"
+                      >
                         {analyzeError}
                       </p>
                     )}
@@ -1769,7 +1787,10 @@ function UnifiedWorkspacePage() {
             )}
 
             {authError && (
-              <p className="mt-4 text-[14px] text-[var(--ci-error-soft)]" role="alert">
+              <p
+                className="mt-4 text-[14px] text-[var(--ci-error-soft)]"
+                role="alert"
+              >
                 {authError}
               </p>
             )}

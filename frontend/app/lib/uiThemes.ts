@@ -316,4 +316,3 @@ export function getThemeCssVars(theme: ThemeName): CSSProperties {
 
   return style as CSSProperties;
 }
-
