@@ -12,7 +12,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -39,7 +38,6 @@ import {
 import {
   mockFeedback,
   mockGeneratedThumbnails,
-  mockPhrases,
 } from "./lib/mockData";
 import { supabase } from "./lib/supabaseClient";
 import {
@@ -154,7 +152,13 @@ function groupHistory(items: RecentAnalysisItem[]): HistorySection[] {
     }));
 }
 
-function ScoreRing({ score }: { score: number | null }) {
+function ScoreRing({
+  score,
+  size = 80,
+}: {
+  score: number | null;
+  size?: number;
+}) {
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   const normalizedScore = typeof score === "number" ? score : 0;
@@ -168,9 +172,19 @@ function ScoreRing({ score }: { score: number | null }) {
           ? "var(--ci-score-mid)"
           : "var(--ci-score-bad)";
 
+  const scoreFontSize = Math.round(size * 0.35);
+  const labelFontSize = Math.round(size * 0.14);
+
   return (
-    <div className="relative flex items-center justify-center w-20 h-20">
-      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        className="-rotate-90"
+        style={{ width: size, height: size }}
+        viewBox="0 0 100 100"
+      >
         <circle
           cx="50"
           cy="50"
@@ -194,12 +208,17 @@ function ScoreRing({ score }: { score: number | null }) {
       </svg>
       <div className="absolute flex flex-col items-center">
         <span
-          className="text-3xl text-[var(--ci-text-primary)]"
-          style={{ fontWeight: 700 }}
+          className="text-[var(--ci-text-primary)]"
+          style={{ fontWeight: 700, fontSize: scoreFontSize }}
         >
           {typeof score === "number" ? score : "--"}
         </span>
-        <span className="text-xs text-[var(--ci-text-subtle)]">/ 100</span>
+        <span
+          className="text-[var(--ci-text-subtle)]"
+          style={{ fontSize: labelFontSize }}
+        >
+          / 100
+        </span>
       </div>
     </div>
   );
@@ -209,16 +228,20 @@ function FeedbackCard({
   icon: Icon,
   title,
   summary,
-  score,
   details,
-  suggestions,
+  thumbnailMode,
+  generatedThumbnail,
+  onGenerate,
+  onThumbnailClick,
 }: {
   icon: ElementType;
   title: string;
   summary: string;
-  score: number | null;
   details: string;
-  suggestions: string[];
+  thumbnailMode?: boolean;
+  generatedThumbnail?: string | null;
+  onGenerate?: () => void;
+  onThumbnailClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -244,12 +267,6 @@ function FeedbackCard({
           </p>
         </div>
         <div className="flex items-center gap-3 pl-4">
-          <span
-            className="text-[22px] text-[var(--ci-warning)]"
-            style={{ fontWeight: 600 }}
-          >
-            {typeof score === "number" ? score : "--"}
-          </span>
           {open ? (
             <ChevronUp className="w-6 h-6 text-[var(--ci-icon-muted-2)]" />
           ) : (
@@ -257,23 +274,123 @@ function FeedbackCard({
           )}
         </div>
       </button>
-      {open && (
-        <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)]">
-          <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)] mt-4">
-            {details}
-          </p>
-          <div className="mt-4 space-y-2">
-            {suggestions.map((suggestion) => (
-              <div key={suggestion} className="flex items-start gap-2">
-                <CheckCircle2 className="w-5 h-5 text-[var(--ci-accent)] mt-1 flex-shrink-0" />
-                <p className="text-[14px] leading-relaxed text-[var(--ci-text-soft)]">
-                  {suggestion}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 300ms ease",
+        }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)]">
+            {thumbnailMode ? (
+              <div
+                className="mt-4"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr",
+                  gap: "16px",
+                  alignItems: "start",
+                }}
+              >
+                <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                  {details}
                 </p>
+                <div className="flex flex-col gap-1">
+                  <div
+                    className="rounded-xl border-2 border-dashed border-[var(--ci-border)] overflow-hidden w-full"
+                    style={{ aspectRatio: "16/9" }}
+                  >
+                    {generatedThumbnail ? (
+                      <button
+                        type="button"
+                        onClick={onThumbnailClick}
+                        className="w-full h-full cursor-pointer"
+                      >
+                        <img
+                          src={generatedThumbnail}
+                          alt="Generated thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onGenerate}
+                        className="w-full h-full flex items-center justify-center gap-2 text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] transition-colors cursor-pointer"
+                        style={{ fontWeight: 500 }}
+                      >
+                        <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                        <span className="text-[14px]">Generate Suggestion</span>
+                      </button>
+                    )}
+                  </div>
+                  {generatedThumbnail && (
+                    <p className="text-[11px] text-center text-[var(--ci-text-subtle)]">
+                      Click to enlarge
+                    </p>
+                  )}
+                </div>
               </div>
-            ))}
+            ) : (
+              <div className="mt-4">
+                <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                  {details}
+                </p>
+                <div className="flex justify-end mt-4">
+                  <button
+                    type="button"
+                    onClick={onGenerate}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--ci-border)] text-[14px] text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] transition-colors cursor-pointer"
+                    style={{ fontWeight: 500 }}
+                  >
+                    <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                    Generate Suggestion
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function ImageModal({
+  src,
+  alt,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      style={{ backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative rounded-2xl overflow-hidden shadow-2xl"
+        style={{ maxWidth: "50vw", maxHeight: "50vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="block object-contain"
+          style={{ maxWidth: "50vw", maxHeight: "50vh" }}
+        />
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer hover:bg-black/80 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -293,7 +410,8 @@ function UnifiedWorkspacePage() {
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [thumbnailView, setThumbnailView] = useState<ThumbnailView>("grid");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [titleSuggestionsOpen, setTitleSuggestionsOpen] = useState(false);
+  const [generatedCardThumbnail, setGeneratedCardThumbnail] = useState<string | null>(null);
+  const [imageModal, setImageModal] = useState<{ src: string; alt: string } | null>(null);
 
   const [form, setForm] = useState<AnalyzeForm>(createEmptyForm);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -374,7 +492,6 @@ function UnifiedWorkspacePage() {
     setAnalyzeError(null);
     setActiveTab("feedback");
     setDrawerOpen(false);
-    setTitleSuggestionsOpen(false);
     setForm(createEmptyForm());
     setThumbnailPreview(null);
     setThumbnailFile(null);
@@ -1275,97 +1392,48 @@ function UnifiedWorkspacePage() {
                         icon={ImageIcon}
                         title="Thumbnail Feedback"
                         summary={mockFeedback.thumbnail.headline}
-                        score={mockFeedback.thumbnail.score}
                         details={mockFeedback.thumbnail.details}
-                        suggestions={mockFeedback.thumbnail.suggestions}
+                        thumbnailMode
+                        generatedThumbnail={generatedCardThumbnail}
+                        onGenerate={() =>
+                          setGeneratedCardThumbnail(
+                            mockGeneratedThumbnails[0] ?? null
+                          )
+                        }
+                        onThumbnailClick={() =>
+                          generatedCardThumbnail &&
+                          setImageModal({
+                            src: generatedCardThumbnail,
+                            alt: "Generated thumbnail",
+                          })
+                        }
                       />
                       <FeedbackCard
                         icon={Type}
                         title="Title Feedback"
                         summary={mockFeedback.title.headline}
-                        score={mockFeedback.title.score}
                         details={mockFeedback.title.details}
-                        suggestions={mockFeedback.title.suggestions}
                       />
                       <FeedbackCard
                         icon={Tag}
                         title="Tags Feedback"
                         summary={mockFeedback.tags.headline}
-                        score={mockFeedback.tags.score}
                         details={mockFeedback.tags.details}
-                        suggestions={mockFeedback.tags.suggestions}
                       />
 
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.75)] overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTitleSuggestionsOpen((prev) => !prev)
-                          }
-                          className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[var(--ci-surface-hover)] transition-colors"
-                        >
-                          <div className="w-12 h-12 rounded-2xl bg-[var(--ci-surface-accent-soft)] flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-[var(--ci-accent-soft)]" />
-                          </div>
-                          <div className="flex-1">
-                            <p
-                              className="text-[22px] text-[var(--ci-text-primary)]"
-                              style={{ fontWeight: 600 }}
-                            >
-                              Title Suggestions
-                            </p>
-                            <p className="text-[15px] text-[var(--ci-text-muted)] mt-1">
-                              AI-generated optimized alternatives
-                            </p>
-                          </div>
-                          <span className="rounded-2xl border border-[var(--ci-control-border-alt)] px-4 py-2 text-[14px] text-[var(--ci-text-soft)] flex items-center gap-2">
-                            {titleSuggestionsOpen ? "Hide" : "Show"}
-                            {titleSuggestionsOpen ? (
-                              <ChevronUp className="w-5 h-5" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5" />
-                            )}
-                          </span>
-                        </button>
-
-                        {titleSuggestionsOpen && (
-                          <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)] space-y-3">
-                            {mockPhrases.slice(0, 4).map((phrase) => (
-                              <div
-                                key={phrase.id}
-                                className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3"
-                              >
-                                <p
-                                  className="text-[14px] text-[var(--ci-text-soft)]"
-                                  style={{ fontWeight: 500 }}
-                                >
-                                  {phrase.phrase}
-                                </p>
-                                <p className="text-[13px] text-[var(--ci-text-subtle)] mt-1">
-                                  Score {phrase.score} - {phrase.reason}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
                       <div className="pt-8">
-                        <div className="w-[320px] max-w-full rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-5 py-4 shadow-[0_18px_35px_-30px_rgba(0,0,0,0.75)]">
-                          <div className="flex items-center gap-4">
-                            <ScoreRing score={displayedScore} />
+                        <div className="w-[400px] max-w-full rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 py-5 shadow-[0_18px_35px_-30px_rgba(0,0,0,0.75)]">
+                          <div className="flex items-center gap-5">
+                            <ScoreRing score={displayedScore} size={100} />
                             <div>
-                              <p className="text-[19px] text-[var(--ci-text-soft)]">
+                              <p className="text-[24px] text-[var(--ci-text-soft)]">
                                 Overall Score
                               </p>
                               <p
-                                className="text-[16px] text-[var(--ci-warning)]"
+                                className="text-[20px] text-[var(--ci-warning)]"
                                 style={{ fontWeight: 600 }}
                               >
                                 {getScoreLabel(displayedScore)}
-                              </p>
-                              <p className="text-[15px] text-[var(--ci-text-subtle)]">
-                                All aspects
                               </p>
                             </div>
                           </div>
@@ -1385,13 +1453,22 @@ function UnifiedWorkspacePage() {
                           </p>
                         </div>
                         {displayedThumbnail ? (
-                          <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] aspect-video">
+                          <button
+                            type="button"
+                            className="w-full rounded-2xl overflow-hidden border border-[var(--ci-border)] aspect-video block cursor-zoom-in"
+                            onClick={() =>
+                              setImageModal({
+                                src: displayedThumbnail,
+                                alt: "Analyzed thumbnail",
+                              })
+                            }
+                          >
                             <img
                               src={displayedThumbnail}
                               alt="Analyzed thumbnail"
                               className="w-full h-full object-cover"
                             />
-                          </div>
+                          </button>
                         ) : (
                           <div className="rounded-2xl border-2 border-dashed border-[var(--ci-border)] aspect-video flex items-center justify-center text-[var(--ci-text-subtle)]">
                             No thumbnail available
@@ -1437,16 +1514,23 @@ function UnifiedWorkspacePage() {
                             {mockGeneratedThumbnails
                               .slice(0, 6)
                               .map((source, index) => (
-                                <div
+                                <button
                                   key={`${source}-${index}`}
-                                  className="rounded-xl overflow-hidden border border-[var(--ci-border)] aspect-video"
+                                  type="button"
+                                  className="rounded-xl overflow-hidden border border-[var(--ci-border)] aspect-video cursor-zoom-in block w-full"
+                                  onClick={() =>
+                                    setImageModal({
+                                      src: source,
+                                      alt: `Generated thumbnail ${index + 1}`,
+                                    })
+                                  }
                                 >
                                   <img
                                     src={source}
                                     alt={`Generated thumbnail ${index + 1}`}
                                     className="w-full h-full object-cover"
                                   />
-                                </div>
+                                </button>
                               ))}
                           </div>
                         ) : (
@@ -1458,13 +1542,22 @@ function UnifiedWorkspacePage() {
                                   key={`${source}-${index}`}
                                   className="flex gap-3 rounded-xl border border-[var(--ci-border)] p-3"
                                 >
-                                  <div className="w-36 rounded-lg overflow-hidden border border-[var(--ci-border)] aspect-video flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    className="w-36 rounded-lg overflow-hidden border border-[var(--ci-border)] aspect-video flex-shrink-0 cursor-zoom-in block"
+                                    onClick={() =>
+                                      setImageModal({
+                                        src: source,
+                                        alt: `Generated thumbnail ${index + 1}`,
+                                      })
+                                    }
+                                  >
                                     <img
                                       src={source}
                                       alt={`Generated thumbnail ${index + 1}`}
                                       className="w-full h-full object-cover"
                                     />
-                                  </div>
+                                  </button>
                                   <div>
                                     <p
                                       className="text-[15px] text-[var(--ci-text-heading-soft)]"
@@ -1533,13 +1626,22 @@ function UnifiedWorkspacePage() {
                         THUMBNAIL
                       </p>
                       {displayedThumbnail ? (
-                        <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)]">
+                        <button
+                          type="button"
+                          className="w-full rounded-2xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)] block cursor-zoom-in"
+                          onClick={() =>
+                            setImageModal({
+                              src: displayedThumbnail,
+                              alt: "Submitted thumbnail",
+                            })
+                          }
+                        >
                           <img
                             src={displayedThumbnail}
                             alt="Submitted thumbnail"
                             className="w-full h-[180px] object-cover"
                           />
-                        </div>
+                        </button>
                       ) : (
                         <div className="rounded-2xl border border-dashed border-[var(--ci-border)] bg-[var(--ci-surface)] h-[140px] flex items-center justify-center text-[var(--ci-text-subtle)]">
                           No thumbnail
@@ -1796,6 +1898,14 @@ function UnifiedWorkspacePage() {
             )}
           </div>
         </div>
+      )}
+
+      {imageModal && (
+        <ImageModal
+          src={imageModal.src}
+          alt={imageModal.alt}
+          onClose={() => setImageModal(null)}
+        />
       )}
     </div>
   );
