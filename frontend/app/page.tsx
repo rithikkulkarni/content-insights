@@ -35,10 +35,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import {
-  mockFeedback,
-  mockGeneratedThumbnails,
-} from "./lib/mockData";
+import { mockFeedback, mockGeneratedThumbnails } from "./lib/mockData";
 import { supabase } from "./lib/supabaseClient";
 import {
   DEFAULT_THEME,
@@ -410,8 +407,13 @@ function UnifiedWorkspacePage() {
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [thumbnailView, setThumbnailView] = useState<ThumbnailView>("grid");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [generatedCardThumbnail, setGeneratedCardThumbnail] = useState<string | null>(null);
-  const [imageModal, setImageModal] = useState<{ src: string; alt: string } | null>(null);
+  const [generatedCardThumbnail, setGeneratedCardThumbnail] = useState<
+    string | null
+  >(null);
+  const [imageModal, setImageModal] = useState<{
+    src: string;
+    alt: string;
+  } | null>(null);
 
   const [form, setForm] = useState<AnalyzeForm>(createEmptyForm);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
