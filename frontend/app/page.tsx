@@ -88,6 +88,114 @@ type HistorySection = {
   items: RecentAnalysisItem[];
 };
 
+type YoutubePreviewVideo = {
+  id: string;
+  title: string;
+  channel: string;
+  views: string;
+  postedAt: string;
+  duration: string;
+  description: string;
+  thumbnail: string;
+  isUser?: boolean;
+};
+
+function getMockThumbnail(index: number): string {
+  if (mockGeneratedThumbnails.length === 0) {
+    return "";
+  }
+  const safeIndex =
+    ((index % mockGeneratedThumbnails.length) +
+      mockGeneratedThumbnails.length) %
+    mockGeneratedThumbnails.length;
+  return mockGeneratedThumbnails[safeIndex];
+}
+
+const YOUTUBE_PREVIEW_POOL: YoutubePreviewVideo[] = [
+  {
+    id: "sample-1",
+    title: "How to Beat Tough Opponents in Low Stakes Poker",
+    channel: "River Theory",
+    views: "951K views",
+    postedAt: "6 months ago",
+    duration: "32:13",
+    description:
+      "Every key hand from the session with decisions broken down street by street.",
+    thumbnail: getMockThumbnail(0),
+  },
+  {
+    id: "sample-2",
+    title: "From Broke to Bankroll: $150,000 Challenge",
+    channel: "Wolfgang Poker",
+    views: "49K views",
+    postedAt: "2 days ago",
+    duration: "18:49",
+    description:
+      "A full poker vlog covering high-pressure spots and bankroll risk management.",
+    thumbnail: getMockThumbnail(1),
+  },
+  {
+    id: "sample-3",
+    title: "Why Your Cards Matter Less Than You Think",
+    channel: "NorCalPoker",
+    views: "39K views",
+    postedAt: "2 weeks ago",
+    duration: "27:33",
+    description:
+      "Table dynamics and positioning concepts explained with practical hand examples.",
+    thumbnail: getMockThumbnail(2),
+  },
+  {
+    id: "sample-4",
+    title: "Cash Game Invitational Highlights",
+    channel: "Triton Poker",
+    views: "2.1M views",
+    postedAt: "4 weeks ago",
+    duration: "14:36",
+    description:
+      "Big pots, player reads, and momentum shifts from a stacked cash game lineup.",
+    thumbnail: getMockThumbnail(3),
+  },
+  {
+    id: "sample-5",
+    title: "Every Play with a Nickname!",
+    channel: "NFL Throwback",
+    views: "7.1M views",
+    postedAt: "3 years ago",
+    duration: "30:33",
+    description:
+      "Iconic moments revisited with commentary and behind-the-play context.",
+    thumbnail: getMockThumbnail(4),
+  },
+  {
+    id: "sample-6",
+    title: "No Game No Life OP - Piano Arrangement",
+    channel: "Luminote",
+    views: "966K views",
+    postedAt: "5 years ago",
+    duration: "5:05",
+    description:
+      "A cinematic piano performance with layered visuals and synchronized highlights.",
+    thumbnail: getMockThumbnail(5),
+  },
+];
+
+function hashText(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % 2_147_483_647;
+  }
+  return Math.abs(hash);
+}
+
+function rotateVideos<T>(items: T[], offset: number): T[] {
+  if (items.length === 0) {
+    return [];
+  }
+  const safeOffset = ((offset % items.length) + items.length) % items.length;
+  return [...items.slice(safeOffset), ...items.slice(0, safeOffset)];
+}
+
 function createEmptyForm(): AnalyzeForm {
   return {
     title: "",
@@ -626,6 +734,55 @@ function UnifiedWorkspacePage() {
     workspaceMode === "analysis"
       ? (selectedAnalysis?.feedback ?? FALLBACK_FEEDBACK)
       : FALLBACK_FEEDBACK;
+  const userChannelName = user?.email?.split("@")[0]?.trim() || "Your Channel";
+  const previewVideos = useMemo(() => {
+    const seedSource = `${selectedAnalysis?.id ?? "new"}:${displayedTitle}:${displayedTopic}`;
+    const rotatedPool = rotateVideos(
+      YOUTUBE_PREVIEW_POOL,
+      hashText(seedSource) % YOUTUBE_PREVIEW_POOL.length
+    );
+    const userVideo: YoutubePreviewVideo = {
+      id: "user-video",
+      title: displayedTitle,
+      channel: userChannelName,
+      views: "0 views",
+      postedAt: "Not posted",
+      duration: "10:00",
+      description:
+        displayedTopic !== "Not provided"
+          ? `Niche: ${displayedTopic}`
+          : "Your draft video preview appears here before publishing.",
+      thumbnail: displayedThumbnail ?? getMockThumbnail(0),
+      isUser: true,
+    };
+
+    return [
+      rotatedPool[0],
+      userVideo,
+      rotatedPool[1],
+      rotatedPool[2],
+      rotatedPool[3],
+      rotatedPool[4],
+    ].filter(Boolean) as YoutubePreviewVideo[];
+  }, [
+    displayedThumbnail,
+    displayedTitle,
+    displayedTopic,
+    selectedAnalysis?.id,
+    userChannelName,
+  ]);
+  const listPreviewVideos = useMemo(() => {
+    if (previewVideos.length < 6) {
+      return previewVideos;
+    }
+    return [
+      previewVideos[3],
+      previewVideos[1],
+      previewVideos[4],
+      previewVideos[0],
+      previewVideos[5],
+    ];
+  }, [previewVideos]);
 
   const closeAuthModal = () => {
     setAuthModalMode(null);
@@ -1528,7 +1685,7 @@ function UnifiedWorkspacePage() {
                           fontWeight: activeTab === "visual" ? 600 : 500,
                         }}
                       >
-                        Visual
+                        Visualize
                       </button>
                     </div>
                   </div>
@@ -1588,139 +1745,139 @@ function UnifiedWorkspacePage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-5">
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <ImageIcon className="w-5 h-5 text-[var(--ci-text-muted)]" />
-                          <p
-                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
-                            style={{ fontWeight: 600 }}
-                          >
-                            Thumbnail
-                          </p>
-                        </div>
-                        {displayedThumbnail ? (
+                    <div className="p-0 sm:p-0">
+                      <div className="flex justify-end mb-4">
+                        <div className="flex bg-[var(--ci-toggle-bg)] rounded-xl p-1 border border-[var(--ci-border)]">
                           <button
                             type="button"
-                            className="w-full rounded-2xl overflow-hidden border border-[var(--ci-border)] aspect-video block cursor-zoom-in"
-                            onClick={() =>
-                              setImageModal({
-                                src: displayedThumbnail,
-                                alt: "Analyzed thumbnail",
-                              })
-                            }
+                            onClick={() => setThumbnailView("grid")}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
+                              thumbnailView === "grid"
+                                ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                : "text-[var(--ci-icon-muted)]"
+                            }`}
                           >
-                            <img
-                              src={displayedThumbnail}
-                              alt="Analyzed thumbnail"
-                              className="w-full h-full object-cover"
-                            />
+                            <Grid3X3 className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <div className="rounded-2xl border-2 border-dashed border-[var(--ci-border)] aspect-video flex items-center justify-center text-[var(--ci-text-subtle)]">
-                            No thumbnail available
-                          </div>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => setThumbnailView("list")}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
+                              thumbnailView === "list"
+                                ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                : "text-[var(--ci-icon-muted)]"
+                            }`}
+                          >
+                            <List className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <p
-                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
-                            style={{ fontWeight: 600 }}
-                          >
-                            Generated thumbnail ideas
-                          </p>
-                          <div className="flex bg-[var(--ci-toggle-bg)] rounded-xl p-1 border border-[var(--ci-border)]">
-                            <button
-                              type="button"
-                              onClick={() => setThumbnailView("grid")}
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
-                                thumbnailView === "grid"
-                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
-                                  : "text-[var(--ci-icon-muted)]"
-                              }`}
+                      {thumbnailView === "grid" ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {previewVideos.map((video, index) => (
+                            <article
+                              key={`${video.id}-${index}`}
+                              className="relative"
                             >
-                              <Grid3X3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setThumbnailView("list")}
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
-                                thumbnailView === "list"
-                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
-                                  : "text-[var(--ci-icon-muted)]"
-                              }`}
-                            >
-                              <List className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        {thumbnailView === "grid" ? (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {mockGeneratedThumbnails
-                              .slice(0, 6)
-                              .map((source, index) => (
-                                <button
-                                  key={`${source}-${index}`}
-                                  type="button"
-                                  className="rounded-xl overflow-hidden border border-[var(--ci-border)] aspect-video cursor-zoom-in block w-full"
-                                  onClick={() =>
-                                    setImageModal({
-                                      src: source,
-                                      alt: `Generated thumbnail ${index + 1}`,
-                                    })
-                                  }
-                                >
-                                  <img
-                                    src={source}
-                                    alt={`Generated thumbnail ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </button>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {mockGeneratedThumbnails
-                              .slice(0, 4)
-                              .map((source, index) => (
-                                <div
-                                  key={`${source}-${index}`}
-                                  className="flex gap-3 rounded-xl border border-[var(--ci-border)] p-3"
-                                >
-                                  <button
-                                    type="button"
-                                    className="w-36 rounded-lg overflow-hidden border border-[var(--ci-border)] aspect-video flex-shrink-0 cursor-zoom-in block"
-                                    onClick={() =>
-                                      setImageModal({
-                                        src: source,
-                                        alt: `Generated thumbnail ${index + 1}`,
-                                      })
-                                    }
-                                  >
-                                    <img
-                                      src={source}
-                                      alt={`Generated thumbnail ${index + 1}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </button>
-                                  <div>
-                                    <p
-                                      className="text-[15px] text-[var(--ci-text-heading-soft)]"
-                                      style={{ fontWeight: 500 }}
-                                    >
-                                      Variant {index + 1}
-                                    </p>
-                                    <p className="text-[13px] text-[var(--ci-text-subtle)]">
-                                      Balanced contrast and readable text
-                                    </p>
-                                  </div>
+                              <button
+                                type="button"
+                                className="relative w-full rounded-2xl overflow-hidden aspect-video block cursor-zoom-in"
+                                onClick={() =>
+                                  setImageModal({
+                                    src: video.thumbnail,
+                                    alt: video.title,
+                                  })
+                                }
+                              >
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] text-white">
+                                  {video.duration}
+                                </span>
+                              </button>
+
+                              <div className="mt-2 flex items-start gap-3">
+                                <div className="w-9 h-9 rounded-full bg-[#262626] text-[#e7e7e7] flex items-center justify-center text-[12px]">
+                                  {video.channel.slice(0, 1).toUpperCase()}
                                 </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="text-[16px] leading-[1.25] text-[#f1f1f1] truncate"
+                                    style={{ fontWeight: 500 }}
+                                  >
+                                    {video.title}
+                                  </p>
+                                  <p className="text-[13px] text-[#a8a8a8] mt-0.5 truncate">
+                                    {video.channel}
+                                  </p>
+                                  <p className="text-[13px] text-[#a8a8a8] mt-0.5 truncate">
+                                    {video.views} • {video.postedAt}
+                                  </p>
+                                </div>
+                                <span className="text-[#9a9a9a] text-[18px] leading-none">
+                                  ⋮
+                                </span>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {listPreviewVideos.map((video, index) => (
+                            <article
+                              key={`${video.id}-list-${index}`}
+                              className="relative flex gap-2 rounded-xl p-1"
+                            >
+                              <button
+                                type="button"
+                                className="relative w-[34%] max-w-[220px] rounded-lg overflow-hidden aspect-video flex-shrink-0 cursor-zoom-in block"
+                                onClick={() =>
+                                  setImageModal({
+                                    src: video.thumbnail,
+                                    alt: video.title,
+                                  })
+                                }
+                              >
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] text-white">
+                                  {video.duration}
+                                </span>
+                              </button>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p
+                                    className="text-[18px] leading-[1.2] text-[#f1f1f1] truncate"
+                                    style={{ fontWeight: 500 }}
+                                  >
+                                    {video.title}
+                                  </p>
+                                  <span className="text-[#9a9a9a] text-[16px] leading-none">
+                                    ⋮
+                                  </span>
+                                </div>
+                                <p className="text-[12px] text-[#a8a8a8] mt-0.5">
+                                  {video.views} • {video.postedAt}
+                                </p>
+                                <p className="text-[12px] text-[#a8a8a8] mt-0.5 truncate">
+                                  {video.channel}
+                                </p>
+                                <p className="text-[11px] text-[#8c8c8c] mt-0.5 leading-relaxed truncate">
+                                  {video.description}
+                                </p>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
