@@ -12,7 +12,6 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  BarChart3,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -20,7 +19,6 @@ import {
   EyeOff,
   Grid3X3,
   Hash,
-  History,
   ImageIcon,
   List,
   LoaderCircle,
@@ -44,6 +42,14 @@ import {
   mockPhrases,
 } from "./lib/mockData";
 import { supabase } from "./lib/supabaseClient";
+import {
+  DEFAULT_THEME,
+  getThemeCssVars,
+  isThemeName,
+  THEME_CONFIG,
+  THEME_STORAGE_KEY,
+  type ThemeName,
+} from "./lib/uiThemes";
 import { useAuthUser } from "./lib/useAuthUser";
 
 type AnalyzeForm = {
@@ -155,12 +161,12 @@ function ScoreRing({ score }: { score: number | null }) {
   const offset = circumference - (normalizedScore / 100) * circumference;
   const color =
     typeof score !== "number"
-      ? "#8aa39e"
+      ? "var(--ci-score-neutral)"
       : score >= 75
-        ? "#4CB572"
+        ? "var(--ci-accent)"
         : score >= 55
-          ? "#E59F2E"
-          : "#CB4E4E";
+          ? "var(--ci-score-mid)"
+          : "var(--ci-score-bad)";
 
   return (
     <div className="relative flex items-center justify-center w-20 h-20">
@@ -169,7 +175,7 @@ function ScoreRing({ score }: { score: number | null }) {
           cx="50"
           cy="50"
           r={radius}
-          stroke="#d6e6e3"
+          stroke="var(--ci-ring-track)"
           strokeWidth="8"
           fill="none"
         />
@@ -187,10 +193,13 @@ function ScoreRing({ score }: { score: number | null }) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-3xl text-[#173730]" style={{ fontWeight: 700 }}>
+        <span
+          className="text-3xl text-[var(--ci-text-primary)]"
+          style={{ fontWeight: 700 }}
+        >
           {typeof score === "number" ? score : "--"}
         </span>
-        <span className="text-xs text-[#5f7b73]">/ 100</span>
+        <span className="text-xs text-[var(--ci-text-subtle)]">/ 100</span>
       </div>
     </div>
   );
@@ -214,50 +223,50 @@ function FeedbackCard({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-3xl border border-[#c4d8d3] bg-white shadow-[0_8px_24px_-18px_rgba(19,94,75,0.45)] overflow-hidden">
+    <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.75)] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[#f6fbf9] transition-colors"
+        className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[var(--ci-surface-hover)] transition-colors"
       >
-        <div className="w-12 h-12 rounded-2xl bg-[#e7f4ee] flex items-center justify-center flex-shrink-0">
-          <Icon className="w-5 h-5 text-[#135E4B]" />
+        <div className="w-12 h-12 rounded-2xl bg-[var(--ci-surface-accent-soft)] flex items-center justify-center flex-shrink-0">
+          <Icon className="w-5 h-5 text-[var(--ci-accent-soft)]" />
         </div>
         <div className="flex-1 min-w-0">
           <p
-            className="text-[22px] leading-[1.1] text-[#173730]"
+            className="text-[22px] leading-[1.1] text-[var(--ci-text-primary)]"
             style={{ fontWeight: 600 }}
           >
             {title}
           </p>
-          <p className="text-[16px] leading-[1.35] text-[#4c6b64] mt-1">
+          <p className="text-[16px] leading-[1.35] text-[var(--ci-text-muted)] mt-1">
             {summary}
           </p>
         </div>
         <div className="flex items-center gap-3 pl-4">
           <span
-            className="text-[22px] text-[#d29d2d]"
+            className="text-[22px] text-[var(--ci-warning)]"
             style={{ fontWeight: 600 }}
           >
             {typeof score === "number" ? score : "--"}
           </span>
           {open ? (
-            <ChevronUp className="w-6 h-6 text-[#7c928d]" />
+            <ChevronUp className="w-6 h-6 text-[var(--ci-icon-muted-2)]" />
           ) : (
-            <ChevronDown className="w-6 h-6 text-[#7c928d]" />
+            <ChevronDown className="w-6 h-6 text-[var(--ci-icon-muted-2)]" />
           )}
         </div>
       </button>
       {open && (
-        <div className="px-6 pb-5 border-t border-[#d9e7e3] bg-[#fbfefd]">
-          <p className="text-[15px] leading-relaxed text-[#36544d] mt-4">
+        <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)]">
+          <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)] mt-4">
             {details}
           </p>
           <div className="mt-4 space-y-2">
             {suggestions.map((suggestion) => (
               <div key={suggestion} className="flex items-start gap-2">
-                <CheckCircle2 className="w-5 h-5 text-[#4CB572] mt-1 flex-shrink-0" />
-                <p className="text-[14px] leading-relaxed text-[#36544d]">
+                <CheckCircle2 className="w-5 h-5 text-[var(--ci-accent)] mt-1 flex-shrink-0" />
+                <p className="text-[14px] leading-relaxed text-[var(--ci-text-soft)]">
                   {suggestion}
                 </p>
               </div>
@@ -312,11 +321,14 @@ function UnifiedWorkspacePage() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupShowPassword, setSignupShowPassword] = useState(false);
+  const [themeName, setThemeName] = useState<ThemeName>(DEFAULT_THEME);
+  const [savingTheme, setSavingTheme] = useState(false);
 
   const historySections = useMemo(
     () => groupHistory(recentItems),
     [recentItems]
   );
+  const themeVars = useMemo(() => getThemeCssVars(themeName), [themeName]);
 
   const selectedAnalysis = useMemo(
     () => recentItems.find((item) => item.id === selectedAnalysisId) ?? null,
@@ -481,6 +493,29 @@ function UnifiedWorkspacePage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setThemeName(DEFAULT_THEME);
+      return;
+    }
+
+    let preferred: ThemeName = DEFAULT_THEME;
+    const metadataTheme = user.user_metadata?.ui_theme;
+
+    if (isThemeName(metadataTheme)) {
+      preferred = metadataTheme;
+    } else if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(
+        `${THEME_STORAGE_KEY}:${user.id}`
+      );
+      if (isThemeName(stored)) {
+        preferred = stored;
+      }
+    }
+
+    setThemeName(preferred);
+  }, [user]);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -650,58 +685,103 @@ function UnifiedWorkspacePage() {
     resetForNewAnalysis();
   };
 
+  const handleThemeChange = async (nextTheme: ThemeName) => {
+    setThemeName(nextTheme);
+
+    if (!user) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(`${THEME_STORAGE_KEY}:${user.id}`, nextTheme);
+    }
+
+    setSavingTheme(true);
+    await supabase.auth.updateUser({
+      data: {
+        ui_theme: nextTheme,
+      },
+    });
+    setSavingTheme(false);
+  };
+
   const isAnalyzeReady = form.title.trim().length > 0 && !!thumbnailFile;
 
   return (
-    <div className="min-h-screen bg-[#edf4f2] text-[#173730]">
+    <div
+      className="min-h-screen bg-[var(--ci-app-bg)] text-[var(--ci-text-main)]"
+      style={themeVars}
+    >
       <div className="h-screen flex overflow-hidden">
         <aside
-          className={`fixed z-40 inset-y-0 left-0 w-[320px] bg-[#135E4B] text-[#e9f5f1] transition-transform duration-300 lg:static lg:translate-x-0 ${
+          className={`fixed z-40 inset-y-0 left-0 w-[320px] overflow-hidden bg-[var(--ci-app-bg)] text-[var(--ci-text-main)] transition-all duration-300 ease-in-out lg:static lg:translate-x-0 ${
             mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } ${sidebarExpanded ? "lg:w-[320px]" : "lg:w-[92px]"}`}
+          } ${sidebarExpanded ? "lg:w-[320px]" : "lg:w-[76px]"}`}
         >
-          <div className="h-full flex flex-col border-r border-[#2f735f]">
-            <div className="px-4 py-4 border-b border-[#2d705d] flex items-center gap-2">
+          <div className="h-full flex flex-col border-r border-[var(--ci-divider)]">
+            <div
+              className={`relative py-4 border-b border-[var(--ci-divider)] flex items-center transition-all duration-300 ${
+                sidebarExpanded ? "px-4 gap-2" : "px-2 gap-0 lg:justify-center"
+              }`}
+            >
+              <div
+                className={`flex items-center gap-3 min-w-0 transition-all duration-200 ${
+                  sidebarExpanded
+                    ? "flex-1 opacity-100 translate-x-0"
+                    : "flex-1 lg:absolute lg:left-2 lg:right-2 lg:opacity-0 lg:translate-x-2 lg:pointer-events-none"
+                }`}
+              >
+                <p
+                  className="text-xl leading-none transition-opacity duration-200"
+                  style={{ fontWeight: 600 }}
+                >
+                  Content Insights
+                </p>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setSidebarExpanded((prev) => !prev)}
-                className="hidden lg:flex w-9 h-9 rounded-xl border border-[#2f7d67] items-center justify-center cursor-pointer hover:bg-[#1f735d] transition-colors"
+                className="hidden lg:flex w-9 h-9 rounded-xl border border-[var(--ci-control-border)] items-center justify-center cursor-pointer hover:bg-[var(--ci-control-hover)] transition-colors"
                 aria-label="Toggle sidebar width"
               >
-                <PanelLeftClose className="w-4 h-4" />
+                <PanelLeftClose
+                  className={`w-4 h-4 transition-transform duration-300 ${
+                    sidebarExpanded ? "" : "rotate-180"
+                  }`}
+                />
               </button>
               <button
                 type="button"
                 onClick={() => setMobileSidebarOpen(false)}
-                className="lg:hidden w-9 h-9 rounded-xl border border-[#2f7d67] flex items-center justify-center cursor-pointer hover:bg-[#1f735d] transition-colors"
+                className="lg:hidden w-9 h-9 rounded-xl border border-[var(--ci-control-border)] flex items-center justify-center cursor-pointer hover:bg-[var(--ci-control-hover)] transition-colors"
                 aria-label="Close sidebar"
               >
                 <X className="w-4 h-4" />
               </button>
-
-              <div
-                className={`flex items-center gap-3 flex-1 ${sidebarExpanded ? "" : "lg:hidden"}`}
-              >
-                <div className="w-10 h-10 rounded-2xl bg-[#4CB572] flex items-center justify-center shadow-[0_0_0_2px_rgba(255,255,255,0.12)]">
-                  <BarChart3 className="w-5 h-5 text-[#114135]" />
-                </div>
-                <p className="text-xl leading-none" style={{ fontWeight: 600 }}>
-                  Content Insights
-                </p>
-              </div>
             </div>
 
-            <div className="px-4 pt-4">
+            <div
+              className={`${sidebarExpanded ? "px-4 pt-4" : "px-2 pt-4 flex justify-center"}`}
+            >
               <button
                 type="button"
                 onClick={resetForNewAnalysis}
-                className={`w-full h-12 rounded-2xl bg-[#1c745f] hover:bg-[#24866d] transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                  sidebarExpanded ? "" : "lg:px-0"
+                className={`overflow-hidden transition-all duration-300 flex items-center justify-center cursor-pointer ${
+                  sidebarExpanded
+                    ? "w-full h-12 rounded-2xl bg-[var(--ci-accent-button)] hover:bg-[var(--ci-accent-button-hover)] gap-2"
+                    : "w-9 h-9 rounded-xl border border-[var(--ci-control-border)] hover:bg-[var(--ci-control-hover)]"
                 }`}
               >
-                <Plus className="w-5 h-5" />
+                <Plus
+                  className={`${sidebarExpanded ? "w-5 h-5" : "w-4 h-4"}`}
+                />
                 <span
-                  className={sidebarExpanded ? "" : "lg:hidden"}
+                  className={`overflow-hidden whitespace-nowrap transition-all duration-200 ${
+                    sidebarExpanded
+                      ? "max-w-[160px] opacity-100 ml-1"
+                      : "max-w-0 opacity-0 ml-0"
+                  }`}
                   style={{ fontWeight: 600 }}
                 >
                   New Analysis
@@ -710,30 +790,38 @@ function UnifiedWorkspacePage() {
             </div>
 
             <div
-              className={`px-4 pt-5 flex-1 overflow-y-auto ${sidebarExpanded ? "" : "lg:hidden"}`}
+              className={`px-4 pt-5 flex-1 overflow-y-auto transition-all duration-200 ${
+                sidebarExpanded
+                  ? "lg:opacity-100 lg:translate-x-0"
+                  : "lg:opacity-0 lg:translate-x-2 lg:pointer-events-none"
+              }`}
             >
               {userLoading ? (
-                <p className="text-sm text-[#b6d8cf]">Checking session...</p>
+                <p className="text-sm text-[var(--ci-text-muted)]">
+                  Checking session...
+                </p>
               ) : !user ? (
-                <p className="text-sm text-[#b6d8cf] leading-relaxed">
+                <p className="text-sm text-[var(--ci-text-muted)] leading-relaxed">
                   Sign in to save analyses and revisit them in your sidebar
                   history.
                 </p>
               ) : loadingHistory ? (
-                <p className="text-sm text-[#b6d8cf]">
+                <p className="text-sm text-[var(--ci-text-muted)]">
                   Loading your analyses...
                 </p>
               ) : historyError ? (
-                <p className="text-sm text-[#ffd3d3]">{historyError}</p>
+                <p className="text-sm text-[var(--ci-error-text)]">
+                  {historyError}
+                </p>
               ) : historySections.length === 0 ? (
-                <p className="text-sm text-[#b6d8cf]">
+                <p className="text-sm text-[var(--ci-text-muted)]">
                   No analyses yet. Create your first one.
                 </p>
               ) : (
                 historySections.map((section) => (
                   <div key={section.label} className="mb-6">
                     <p
-                      className="text-xs text-[#90bfb2] mb-3 tracking-widest"
+                      className="text-xs text-[var(--ci-text-soft)] mb-3 tracking-widest"
                       style={{ fontWeight: 600 }}
                     >
                       {section.label}
@@ -752,8 +840,8 @@ function UnifiedWorkspacePage() {
                           className={`w-full text-left rounded-2xl px-3 py-2.5 transition-colors cursor-pointer ${
                             selectedAnalysisId === item.id &&
                             workspaceMode === "analysis"
-                              ? "bg-[#2a7a65] text-white"
-                              : "text-[#d8ece5] hover:bg-[#1e6d59]"
+                              ? "bg-[var(--ci-history-active-bg)] text-[var(--ci-text-strong)]"
+                              : "text-[var(--ci-text-main)] hover:bg-[var(--ci-history-hover-bg)]"
                           }`}
                         >
                           <span className="text-base leading-snug line-clamp-2">
@@ -768,12 +856,16 @@ function UnifiedWorkspacePage() {
             </div>
 
             <div
-              className={`border-t border-[#2d705d] px-4 py-4 ${sidebarExpanded ? "" : "lg:hidden"}`}
+              className={`border-t px-4 py-4 transition-all duration-200 ${
+                sidebarExpanded
+                  ? "border-[var(--ci-divider)] lg:opacity-100 lg:translate-x-0"
+                  : "border-transparent lg:opacity-0 lg:translate-x-2 lg:pointer-events-none"
+              }`}
             >
               {user ? (
-                <div className="rounded-2xl border border-[#2f7d67] bg-[#1a6a56] px-3 py-3">
+                <div className="rounded-2xl border border-[var(--ci-control-border)] bg-[var(--ci-surface-sidebar-card)] px-3 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#4CB572] text-[#13382f] flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-[var(--ci-accent)] text-[var(--ci-contrast-on-accent)] flex items-center justify-center">
                       <User className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
@@ -785,15 +877,63 @@ function UnifiedWorkspacePage() {
                           user.email ||
                           "Account"}
                       </p>
-                      <p className="text-xs text-[#a5d2c5] truncate">
+                      <p className="text-xs text-[var(--ci-text-soft)] truncate">
                         {user.email || "Signed in"}
                       </p>
                     </div>
                   </div>
+                  <div className="mt-3">
+                    <p
+                      className="block text-xs text-[var(--ci-text-soft)] mb-1"
+                      style={{ fontWeight: 600 }}
+                    >
+                      Theme
+                    </p>
+                    <div className="flex items-center gap-2.5">
+                      {(
+                        Object.entries(THEME_CONFIG) as Array<
+                          [
+                            ThemeName,
+                            { label: string; colors: Record<string, string> },
+                          ]
+                        >
+                      ).map(([key, value]) => {
+                        const isActive = themeName === key;
+                        const swatchColor = value.colors["ci-accent"];
+
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => void handleThemeChange(key)}
+                            className={`relative w-8 h-8 rounded-full border transition-all cursor-pointer ${
+                              isActive
+                                ? "border-[var(--ci-text-strong)] ring-2 ring-[var(--ci-control-border-soft)]"
+                                : "border-[var(--ci-control-border)] hover:border-[var(--ci-text-soft)]"
+                            }`}
+                            style={{ backgroundColor: swatchColor }}
+                            aria-label={`Use ${value.label} theme`}
+                            title={value.label}
+                          >
+                            {isActive && (
+                              <span className="absolute inset-0 flex items-center justify-center">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[var(--ci-text-strong)]/85" />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {savingTheme && (
+                      <p className="text-[11px] text-[var(--ci-text-subtle)] mt-1">
+                        Saving theme...
+                      </p>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => void handleSignOut()}
-                    className="mt-3 w-full h-10 rounded-xl border border-[#3a8f77] text-sm flex items-center justify-center gap-2 hover:bg-[#165846] transition-colors cursor-pointer"
+                    className="mt-3 w-full h-10 rounded-xl border border-[var(--ci-control-border-strong)] text-sm flex items-center justify-center gap-2 hover:bg-[var(--ci-surface-sidebar-card-hover)] transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     Sign Out
@@ -807,9 +947,9 @@ function UnifiedWorkspacePage() {
                     setAuthNotice(null);
                     setAuthModalMode("login");
                   }}
-                  className="w-full rounded-2xl border border-[#2f7d67] bg-[#1a6a56] px-3 py-3 flex items-center gap-3 cursor-pointer hover:bg-[#1d725c] transition-colors"
+                  className="w-full rounded-2xl border border-[var(--ci-control-border)] bg-[var(--ci-surface-sidebar-card)] px-3 py-3 flex items-center gap-3 cursor-pointer hover:bg-[var(--ci-surface-sidebar-card-hover)] transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-full border border-[#3b8d76] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full border border-[var(--ci-control-border-soft)] flex items-center justify-center">
                     <LogIn className="w-4 h-4" />
                   </div>
                   <div className="text-left">
@@ -819,7 +959,7 @@ function UnifiedWorkspacePage() {
                     >
                       Log in
                     </p>
-                    <p className="text-xs text-[#a5d2c5] mt-1">
+                    <p className="text-xs text-[var(--ci-text-soft)] mt-1">
                       Save your analyses
                     </p>
                   </div>
@@ -839,39 +979,27 @@ function UnifiedWorkspacePage() {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col relative">
-          <header className="h-[74px] border-b border-[#c4d8d3] bg-[#f7fbfa] px-4 sm:px-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMobileSidebarOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-xl border border-[#c4d8d3] flex items-center justify-center text-[#2d6256] cursor-pointer hover:bg-[#ecf5f2] transition-colors"
-                aria-label="Open sidebar"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-
-              <div className="hidden lg:flex items-center gap-2 text-[#2d6256]">
-                <History className="w-4 h-4" />
-                <span className="text-sm">Workspace</span>
-              </div>
-            </div>
-          </header>
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(true)}
+            className="absolute top-4 left-4 z-20 lg:hidden w-10 h-10 rounded-xl border border-[var(--ci-control-border)] bg-[var(--ci-surface-deep)] flex items-center justify-center text-[var(--ci-text-soft-strong)] cursor-pointer hover:bg-[var(--ci-control-hover)] transition-colors"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
           <div className="flex-1 flex min-h-0">
-            <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8">
+            <main className="flex-1 overflow-y-auto px-4 sm:px-8 pt-16 sm:pt-10 pb-8">
               {workspaceMode === "compose" ? (
                 <section className="max-w-5xl mx-auto">
                   <div className="text-center mb-8">
-                    <div className="mx-auto w-20 h-20 rounded-3xl bg-[#135E4B] flex items-center justify-center shadow-[0_16px_32px_-20px_rgba(19,94,75,0.8)] mb-5">
-                      <BarChart3 className="w-9 h-9 text-[#c7efda]" />
-                    </div>
                     <h1
-                      className="text-[42px] leading-[1.08] text-[#152e29]"
+                      className="text-[42px] leading-[1.08] text-[var(--ci-text-primary)]"
                       style={{ fontWeight: 700 }}
                     >
                       What content would you like to analyze?
                     </h1>
-                    <p className="text-[15px] text-[#5f7b73] mt-3">
+                    <p className="text-[15px] text-[var(--ci-text-soft-strong)] mt-3">
                       Get AI-powered feedback on your thumbnail, title, and tags
                       to grow faster.
                     </p>
@@ -880,17 +1008,17 @@ function UnifiedWorkspacePage() {
                   <form onSubmit={handleAnalyzeSubmit} className="space-y-6">
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.1em] text-[#4c6b64] mb-3 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.1em] text-[var(--ci-text-soft-2)] mb-3 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Upload className="w-5 h-5" />
                         THUMBNAIL{" "}
-                        <span className="text-[#8ca59f]">
+                        <span className="text-[var(--ci-text-subtle-2)]">
                           (optional preview, required for analyze)
                         </span>
                       </p>
                       {thumbnailPreview ? (
-                        <div className="relative rounded-3xl overflow-hidden border border-[#c4d8d3] bg-white">
+                        <div className="relative rounded-3xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)]">
                           <img
                             src={thumbnailPreview}
                             alt="Thumbnail preview"
@@ -924,22 +1052,22 @@ function UnifiedWorkspacePage() {
                             setDragOver(true);
                           }}
                           onDragLeave={() => setDragOver(false)}
-                          className={`w-full border-2 border-dashed rounded-3xl px-5 py-12 bg-white transition-colors cursor-pointer ${
+                          className={`w-full border-2 border-dashed rounded-3xl px-5 py-12 bg-[var(--ci-surface)] transition-colors cursor-pointer ${
                             dragOver
-                              ? "border-[#4CB572] bg-[#eef9f2]"
-                              : "border-[#c4d8d3] hover:border-[#4CB572] hover:bg-[#f7fdf9]"
+                              ? "border-[var(--ci-accent)] bg-[var(--ci-dropzone-active)]"
+                              : "border-[var(--ci-border)] hover:border-[var(--ci-accent)] hover:bg-[var(--ci-dropzone-hover)]"
                           }`}
                         >
-                          <div className="mx-auto w-14 h-14 rounded-full bg-[#e7f4ee] flex items-center justify-center">
-                            <Upload className="w-6 h-6 text-[#135E4B]" />
+                          <div className="mx-auto w-14 h-14 rounded-full bg-[var(--ci-upload-icon-bg)] flex items-center justify-center">
+                            <Upload className="w-6 h-6 text-[var(--ci-upload-icon-color)]" />
                           </div>
                           <p
-                            className="text-[18px] text-[#36544d] mt-4"
+                            className="text-[18px] text-[var(--ci-text-heading-soft)] mt-4"
                             style={{ fontWeight: 500 }}
                           >
                             Upload thumbnail
                           </p>
-                          <p className="text-[14px] text-[#718d86]">
+                          <p className="text-[14px] text-[var(--ci-text-subtle-3)]">
                             PNG, JPG up to 10MB - Drag and drop or click
                           </p>
                         </button>
@@ -960,11 +1088,12 @@ function UnifiedWorkspacePage() {
 
                     <div>
                       <label
-                        className="text-[13px] tracking-[0.1em] text-[#4c6b64] flex items-center gap-2"
+                        className="text-[13px] tracking-[0.1em] text-[var(--ci-text-soft-2)] flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Type className="w-5 h-5" />
-                        VIDEO TITLE <span className="text-[#bf6a58]">*</span>
+                        VIDEO TITLE{" "}
+                        <span className="text-[var(--ci-required)]">*</span>
                       </label>
                       <input
                         type="text"
@@ -977,17 +1106,17 @@ function UnifiedWorkspacePage() {
                           }));
                         }}
                         placeholder="e.g. How I Gained 10K Subscribers in 30 Days"
-                        className="mt-3 w-full h-[74px] rounded-3xl border border-[#c4d8d3] bg-white px-6 text-[18px] text-[#1f3d35] placeholder:text-[#a2b8b2] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                        className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                         required
                       />
-                      <p className="text-[13px] text-[#7b9690] mt-2">
+                      <p className="text-[13px] text-[var(--ci-text-subtle)] mt-2">
                         {form.title.length} / 100 recommended characters
                       </p>
                     </div>
 
                     <div>
                       <label
-                        className="text-[13px] tracking-[0.1em] text-[#4c6b64] flex items-center gap-2"
+                        className="text-[13px] tracking-[0.1em] text-[var(--ci-text-soft-2)] flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Tag className="w-5 h-5" />
@@ -1004,9 +1133,9 @@ function UnifiedWorkspacePage() {
                           }));
                         }}
                         placeholder="e.g. youtube growth, content creator, subscriber tips"
-                        className="mt-3 w-full h-[74px] rounded-3xl border border-[#c4d8d3] bg-white px-6 text-[18px] text-[#1f3d35] placeholder:text-[#a2b8b2] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                        className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                       />
-                      <p className="text-[13px] text-[#7b9690] mt-2">
+                      <p className="text-[13px] text-[var(--ci-text-subtle)] mt-2">
                         Separate with commas - Aim for 12-15 tags
                       </p>
                     </div>
@@ -1014,7 +1143,7 @@ function UnifiedWorkspacePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div>
                         <label
-                          className="text-[13px] tracking-[0.1em] text-[#4c6b64] flex items-center gap-2"
+                          className="text-[13px] tracking-[0.1em] text-[var(--ci-text-soft-2)] flex items-center gap-2"
                           style={{ fontWeight: 600 }}
                         >
                           <Hash className="w-5 h-5" />
@@ -1031,12 +1160,12 @@ function UnifiedWorkspacePage() {
                             }));
                           }}
                           placeholder="e.g. YouTube Growth"
-                          className="mt-3 w-full h-[74px] rounded-3xl border border-[#c4d8d3] bg-white px-6 text-[18px] text-[#1f3d35] placeholder:text-[#a2b8b2] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                          className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                         />
                       </div>
                       <div>
                         <label
-                          className="text-[13px] tracking-[0.1em] text-[#4c6b64] flex items-center gap-2"
+                          className="text-[13px] tracking-[0.1em] text-[var(--ci-text-soft-2)] flex items-center gap-2"
                           style={{ fontWeight: 600 }}
                         >
                           <Users className="w-5 h-5" />
@@ -1054,7 +1183,7 @@ function UnifiedWorkspacePage() {
                             }));
                           }}
                           placeholder="e.g. 5200"
-                          className="mt-3 w-full h-[74px] rounded-3xl border border-[#c4d8d3] bg-white px-6 text-[18px] text-[#1f3d35] placeholder:text-[#a2b8b2] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                          className="mt-3 w-full h-[74px] rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 text-[18px] text-[var(--ci-input-text)] placeholder:text-[var(--ci-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                         />
                       </div>
                     </div>
@@ -1062,7 +1191,7 @@ function UnifiedWorkspacePage() {
                     <button
                       type="submit"
                       disabled={analyzing || !isAnalyzeReady}
-                      className="w-full h-[78px] rounded-3xl bg-[#4CB572] text-[#13382f] text-[19px] hover:bg-[#3fa364] disabled:opacity-55 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
+                      className="w-full h-[78px] rounded-3xl bg-[var(--ci-accent-strong)] text-[var(--ci-accent-strong-text)] text-[19px] hover:bg-[var(--ci-accent-strong-hover)] disabled:opacity-55 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
                       style={{ fontWeight: 600 }}
                     >
                       {analyzing ? (
@@ -1079,7 +1208,10 @@ function UnifiedWorkspacePage() {
                     </button>
 
                     {analyzeError && (
-                      <p className="text-[14px] text-[#b53d3d]" role="alert">
+                      <p
+                        className="text-[14px] text-[var(--ci-error)]"
+                        role="alert"
+                      >
                         {analyzeError}
                       </p>
                     )}
@@ -1088,10 +1220,10 @@ function UnifiedWorkspacePage() {
               ) : (
                 <section className="max-w-[1120px] mx-auto">
                   <div className="mb-6">
-                    <p className="text-[30px] text-[#415c56]">
+                    <p className="text-[30px] text-[var(--ci-heading-title)]">
                       Analyzing:{" "}
                       <span
-                        className="text-[#173730]"
+                        className="text-[var(--ci-text-strong)]"
                         style={{ fontWeight: 600 }}
                       >
                         {displayedTitle}
@@ -1099,15 +1231,15 @@ function UnifiedWorkspacePage() {
                     </p>
                   </div>
 
-                  <div className="border-b border-[#c4d8d3] mb-4">
+                  <div className="border-b border-[var(--ci-divider)] mb-4">
                     <div className="flex gap-6">
                       <button
                         type="button"
                         onClick={() => setActiveTab("feedback")}
                         className={`pb-3 text-[18px] border-b-2 transition-colors cursor-pointer ${
                           activeTab === "feedback"
-                            ? "text-[#135E4B] border-[#4CB572]"
-                            : "text-[#6e8882] border-transparent hover:text-[#2f6257]"
+                            ? "text-[var(--ci-accent-soft-strong)] border-[var(--ci-accent)]"
+                            : "text-[var(--ci-text-muted)] border-transparent hover:text-[var(--ci-tab-hover-text)]"
                         }`}
                         style={{
                           fontWeight: activeTab === "feedback" ? 600 : 500,
@@ -1120,8 +1252,8 @@ function UnifiedWorkspacePage() {
                         onClick={() => setActiveTab("visual")}
                         className={`pb-3 text-[18px] border-b-2 transition-colors cursor-pointer ${
                           activeTab === "visual"
-                            ? "text-[#135E4B] border-[#4CB572]"
-                            : "text-[#6e8882] border-transparent hover:text-[#2f6257]"
+                            ? "text-[var(--ci-accent-soft-strong)] border-[var(--ci-accent)]"
+                            : "text-[var(--ci-text-muted)] border-transparent hover:text-[var(--ci-tab-hover-text)]"
                         }`}
                         style={{
                           fontWeight: activeTab === "visual" ? 600 : 500,
@@ -1134,7 +1266,7 @@ function UnifiedWorkspacePage() {
 
                   {activeTab === "feedback" ? (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-[14px] text-[#6a857f]">
+                      <div className="flex items-center gap-2 text-[14px] text-[var(--ci-text-muted)]">
                         <AlertCircle className="w-5 h-5" />
                         Click each card to expand details
                       </div>
@@ -1164,29 +1296,29 @@ function UnifiedWorkspacePage() {
                         suggestions={mockFeedback.tags.suggestions}
                       />
 
-                      <div className="rounded-3xl border border-[#c4d8d3] bg-white shadow-[0_8px_24px_-18px_rgba(19,94,75,0.45)] overflow-hidden">
+                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.75)] overflow-hidden">
                         <button
                           type="button"
                           onClick={() =>
                             setTitleSuggestionsOpen((prev) => !prev)
                           }
-                          className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[#f6fbf9] transition-colors"
+                          className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[var(--ci-surface-hover)] transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-2xl bg-[#e7f4ee] flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-[#135E4B]" />
+                          <div className="w-12 h-12 rounded-2xl bg-[var(--ci-surface-accent-soft)] flex items-center justify-center">
+                            <Sparkles className="w-5 h-5 text-[var(--ci-accent-soft)]" />
                           </div>
                           <div className="flex-1">
                             <p
-                              className="text-[22px] text-[#173730]"
+                              className="text-[22px] text-[var(--ci-text-primary)]"
                               style={{ fontWeight: 600 }}
                             >
                               Title Suggestions
                             </p>
-                            <p className="text-[15px] text-[#4c6b64] mt-1">
+                            <p className="text-[15px] text-[var(--ci-text-muted)] mt-1">
                               AI-generated optimized alternatives
                             </p>
                           </div>
-                          <span className="rounded-2xl border border-[#9fcab9] px-4 py-2 text-[14px] text-[#135E4B] flex items-center gap-2">
+                          <span className="rounded-2xl border border-[var(--ci-control-border-alt)] px-4 py-2 text-[14px] text-[var(--ci-text-soft)] flex items-center gap-2">
                             {titleSuggestionsOpen ? "Hide" : "Show"}
                             {titleSuggestionsOpen ? (
                               <ChevronUp className="w-5 h-5" />
@@ -1197,19 +1329,19 @@ function UnifiedWorkspacePage() {
                         </button>
 
                         {titleSuggestionsOpen && (
-                          <div className="px-6 pb-5 border-t border-[#d9e7e3] bg-[#fbfefd] space-y-3">
+                          <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)] space-y-3">
                             {mockPhrases.slice(0, 4).map((phrase) => (
                               <div
                                 key={phrase.id}
-                                className="rounded-2xl border border-[#d3e4df] bg-white px-4 py-3"
+                                className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3"
                               >
                                 <p
-                                  className="text-[14px] text-[#284d44]"
+                                  className="text-[14px] text-[var(--ci-text-soft)]"
                                   style={{ fontWeight: 500 }}
                                 >
                                   {phrase.phrase}
                                 </p>
-                                <p className="text-[13px] text-[#6f8a84] mt-1">
+                                <p className="text-[13px] text-[var(--ci-text-subtle)] mt-1">
                                   Score {phrase.score} - {phrase.reason}
                                 </p>
                               </div>
@@ -1219,20 +1351,20 @@ function UnifiedWorkspacePage() {
                       </div>
 
                       <div className="pt-8">
-                        <div className="w-[320px] max-w-full rounded-3xl border border-[#c6dcd6] bg-white px-5 py-4 shadow-[0_18px_35px_-30px_rgba(19,94,75,0.8)]">
+                        <div className="w-[320px] max-w-full rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-5 py-4 shadow-[0_18px_35px_-30px_rgba(0,0,0,0.75)]">
                           <div className="flex items-center gap-4">
                             <ScoreRing score={displayedScore} />
                             <div>
-                              <p className="text-[19px] text-[#4f6e67]">
+                              <p className="text-[19px] text-[var(--ci-text-soft)]">
                                 Overall Score
                               </p>
                               <p
-                                className="text-[16px] text-[#d29d2d]"
+                                className="text-[16px] text-[var(--ci-warning)]"
                                 style={{ fontWeight: 600 }}
                               >
                                 {getScoreLabel(displayedScore)}
                               </p>
-                              <p className="text-[15px] text-[#849b96]">
+                              <p className="text-[15px] text-[var(--ci-text-subtle)]">
                                 All aspects
                               </p>
                             </div>
@@ -1242,18 +1374,18 @@ function UnifiedWorkspacePage() {
                     </div>
                   ) : (
                     <div className="space-y-5">
-                      <div className="rounded-3xl border border-[#c4d8d3] bg-white p-5">
+                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
                         <div className="flex items-center gap-2 mb-3">
-                          <ImageIcon className="w-5 h-5 text-[#4f6e67]" />
+                          <ImageIcon className="w-5 h-5 text-[var(--ci-text-muted)]" />
                           <p
-                            className="text-[17px] text-[#284d44]"
+                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
                             style={{ fontWeight: 600 }}
                           >
                             Thumbnail
                           </p>
                         </div>
                         {displayedThumbnail ? (
-                          <div className="rounded-2xl overflow-hidden border border-[#cde0db] aspect-video">
+                          <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] aspect-video">
                             <img
                               src={displayedThumbnail}
                               alt="Analyzed thumbnail"
@@ -1261,28 +1393,28 @@ function UnifiedWorkspacePage() {
                             />
                           </div>
                         ) : (
-                          <div className="rounded-2xl border-2 border-dashed border-[#d3e4df] aspect-video flex items-center justify-center text-[#7b9690]">
+                          <div className="rounded-2xl border-2 border-dashed border-[var(--ci-border)] aspect-video flex items-center justify-center text-[var(--ci-text-subtle)]">
                             No thumbnail available
                           </div>
                         )}
                       </div>
 
-                      <div className="rounded-3xl border border-[#c4d8d3] bg-white p-5">
+                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
                         <div className="flex items-center justify-between gap-3 mb-3">
                           <p
-                            className="text-[17px] text-[#284d44]"
+                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
                             style={{ fontWeight: 600 }}
                           >
                             Generated thumbnail ideas
                           </p>
-                          <div className="flex bg-[#eef5f2] rounded-xl p-1 border border-[#d8e7e2]">
+                          <div className="flex bg-[var(--ci-toggle-bg)] rounded-xl p-1 border border-[var(--ci-border)]">
                             <button
                               type="button"
                               onClick={() => setThumbnailView("grid")}
                               className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
                                 thumbnailView === "grid"
-                                  ? "bg-white text-[#135E4B] shadow-sm"
-                                  : "text-[#79948d]"
+                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                  : "text-[var(--ci-icon-muted)]"
                               }`}
                             >
                               <Grid3X3 className="w-4 h-4" />
@@ -1292,8 +1424,8 @@ function UnifiedWorkspacePage() {
                               onClick={() => setThumbnailView("list")}
                               className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
                                 thumbnailView === "list"
-                                  ? "bg-white text-[#135E4B] shadow-sm"
-                                  : "text-[#79948d]"
+                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                  : "text-[var(--ci-icon-muted)]"
                               }`}
                             >
                               <List className="w-4 h-4" />
@@ -1307,7 +1439,7 @@ function UnifiedWorkspacePage() {
                               .map((source, index) => (
                                 <div
                                   key={`${source}-${index}`}
-                                  className="rounded-xl overflow-hidden border border-[#d3e4df] aspect-video"
+                                  className="rounded-xl overflow-hidden border border-[var(--ci-border)] aspect-video"
                                 >
                                   <img
                                     src={source}
@@ -1324,9 +1456,9 @@ function UnifiedWorkspacePage() {
                               .map((source, index) => (
                                 <div
                                   key={`${source}-${index}`}
-                                  className="flex gap-3 rounded-xl border border-[#d3e4df] p-3"
+                                  className="flex gap-3 rounded-xl border border-[var(--ci-border)] p-3"
                                 >
-                                  <div className="w-36 rounded-lg overflow-hidden border border-[#d3e4df] aspect-video flex-shrink-0">
+                                  <div className="w-36 rounded-lg overflow-hidden border border-[var(--ci-border)] aspect-video flex-shrink-0">
                                     <img
                                       src={source}
                                       alt={`Generated thumbnail ${index + 1}`}
@@ -1335,12 +1467,12 @@ function UnifiedWorkspacePage() {
                                   </div>
                                   <div>
                                     <p
-                                      className="text-[15px] text-[#284d44]"
+                                      className="text-[15px] text-[var(--ci-text-heading-soft)]"
                                       style={{ fontWeight: 500 }}
                                     >
                                       Variant {index + 1}
                                     </p>
-                                    <p className="text-[13px] text-[#79948d]">
+                                    <p className="text-[13px] text-[var(--ci-text-subtle)]">
                                       Balanced contrast and readable text
                                     </p>
                                   </div>
@@ -1357,7 +1489,7 @@ function UnifiedWorkspacePage() {
 
             {workspaceMode === "analysis" && (
               <aside
-                className={`absolute right-0 top-[74px] bottom-0 z-20 w-[360px] max-w-[95vw] border-l border-[#c4d8d3] bg-[#f5faf8] transition-all duration-300 lg:static lg:top-0 lg:bottom-auto lg:max-w-none relative ${
+                className={`absolute right-0 top-0 bottom-0 z-20 w-[360px] max-w-[95vw] border-l border-[var(--ci-divider)] bg-[var(--ci-app-bg)] transition-all duration-300 lg:static lg:top-0 lg:bottom-auto lg:max-w-none relative ${
                   drawerOpen
                     ? "translate-x-0 lg:translate-x-0 lg:w-[360px] lg:border-l"
                     : "translate-x-full lg:translate-x-0 lg:w-0 lg:border-l-0"
@@ -1366,7 +1498,7 @@ function UnifiedWorkspacePage() {
                 <button
                   type="button"
                   onClick={() => setDrawerOpen((prev) => !prev)}
-                  className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 z-40 h-24 w-10 rounded-l-xl border border-r-0 border-[#9ebdb4] bg-[#f2f8f5] text-[#135E4B] flex items-center justify-center shadow-[0_8px_22px_-14px_rgba(19,94,75,0.65)] hover:bg-[#e6f3ed] transition-colors cursor-pointer"
+                  className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 z-40 h-24 w-10 rounded-l-xl border border-r-0 border-[var(--ci-tab-border)] bg-[var(--ci-tab-bg)] text-[var(--ci-tab-text)] flex items-center justify-center shadow-[0_8px_22px_-14px_rgba(0,0,0,0.7)] hover:bg-[var(--ci-tab-hover)] transition-colors cursor-pointer"
                   aria-label={
                     drawerOpen ? "Hide input sidebar" : "Show input sidebar"
                   }
@@ -1374,9 +1506,9 @@ function UnifiedWorkspacePage() {
                   <Menu className="w-5 h-5 rotate-90" />
                 </button>
                 <div className="h-full flex flex-col">
-                  <div className="h-[74px] border-b border-[#c4d8d3] px-5 flex items-center justify-between">
+                  <div className="h-[74px] border-b border-[var(--ci-divider)] px-5 flex items-center justify-between">
                     <p
-                      className="text-[22px] text-[#173730]"
+                      className="text-[22px] text-[var(--ci-text-strong)]"
                       style={{ fontWeight: 600 }}
                     >
                       Your Input
@@ -1384,7 +1516,7 @@ function UnifiedWorkspacePage() {
                     <button
                       type="button"
                       onClick={() => setDrawerOpen(false)}
-                      className="w-9 h-9 rounded-xl border border-[#c4d8d3] flex items-center justify-center text-[#5e7872] cursor-pointer hover:bg-white transition-colors"
+                      className="w-9 h-9 rounded-xl border border-[var(--ci-control-border-icon)] flex items-center justify-center text-[var(--ci-text-soft)] cursor-pointer hover:bg-[var(--ci-control-hover-2)] transition-colors"
                       aria-label="Close input drawer"
                     >
                       <X className="w-4 h-4" />
@@ -1394,14 +1526,14 @@ function UnifiedWorkspacePage() {
                   <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.12em] text-[#6b8680] mb-2 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.12em] text-[var(--ci-input-label)] mb-2 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <ImageIcon className="w-4 h-4" />
                         THUMBNAIL
                       </p>
                       {displayedThumbnail ? (
-                        <div className="rounded-2xl overflow-hidden border border-[#cde0db] bg-white">
+                        <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)]">
                           <img
                             src={displayedThumbnail}
                             alt="Submitted thumbnail"
@@ -1409,7 +1541,7 @@ function UnifiedWorkspacePage() {
                           />
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-dashed border-[#cde0db] h-[140px] flex items-center justify-center text-[#79948d]">
+                        <div className="rounded-2xl border border-dashed border-[var(--ci-border)] bg-[var(--ci-surface)] h-[140px] flex items-center justify-center text-[var(--ci-text-subtle)]">
                           No thumbnail
                         </div>
                       )}
@@ -1417,20 +1549,20 @@ function UnifiedWorkspacePage() {
 
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.12em] text-[#6b8680] mb-2 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.12em] text-[var(--ci-input-label)] mb-2 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Type className="w-4 h-4" />
                         TITLE
                       </p>
-                      <div className="rounded-2xl border border-[#cde0db] bg-white px-4 py-3 text-[16px] text-[#284d44]">
+                      <div className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3 text-[16px] text-[var(--ci-input-field-text)]">
                         {displayedTitle}
                       </div>
                     </div>
 
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.12em] text-[#6b8680] mb-2 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.12em] text-[var(--ci-input-label)] mb-2 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Tag className="w-4 h-4" />
@@ -1441,14 +1573,14 @@ function UnifiedWorkspacePage() {
                           {displayedTags.map((tag, index) => (
                             <span
                               key={`${tag}-${index}`}
-                              className="rounded-full border border-[#b9d7cb] bg-[#eaf6f0] px-3 py-1 text-[13px] text-[#2d6256]"
+                              className="rounded-full border border-[var(--ci-chip-border)] bg-[var(--ci-chip-bg)] px-3 py-1 text-[13px] text-[var(--ci-chip-text)]"
                             >
                               {tag}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[14px] text-[#7b9690]">
+                        <p className="text-[14px] text-[var(--ci-text-subtle)]">
                           No tags provided.
                         </p>
                       )}
@@ -1456,26 +1588,26 @@ function UnifiedWorkspacePage() {
 
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.12em] text-[#6b8680] mb-2 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.12em] text-[var(--ci-input-label)] mb-2 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Hash className="w-4 h-4" />
                         TOPIC / NICHE
                       </p>
-                      <div className="rounded-2xl border border-[#cde0db] bg-white px-4 py-3 text-[16px] text-[#284d44]">
+                      <div className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3 text-[16px] text-[var(--ci-input-field-text)]">
                         {displayedTopic}
                       </div>
                     </div>
 
                     <div>
                       <p
-                        className="text-[13px] tracking-[0.12em] text-[#6b8680] mb-2 flex items-center gap-2"
+                        className="text-[13px] tracking-[0.12em] text-[var(--ci-input-label)] mb-2 flex items-center gap-2"
                         style={{ fontWeight: 600 }}
                       >
                         <Users className="w-4 h-4" />
                         SUBSCRIBERS
                       </p>
-                      <div className="rounded-2xl border border-[#cde0db] bg-white px-4 py-3 text-[16px] text-[#284d44]">
+                      <div className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3 text-[16px] text-[var(--ci-input-field-text)]">
                         {typeof displayedSubscribers === "number" &&
                         Number.isFinite(displayedSubscribers)
                           ? displayedSubscribers.toLocaleString()
@@ -1492,7 +1624,7 @@ function UnifiedWorkspacePage() {
 
       {authModalMode && (
         <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-3xl border border-[#2f584d] bg-[#12241f] text-[#eaf3f0] p-6 sm:p-8 shadow-2xl">
+          <div className="w-full max-w-xl rounded-3xl border border-[var(--ci-modal-border)] bg-[var(--ci-modal-bg)] text-[var(--ci-modal-text)] p-6 sm:p-8 shadow-2xl">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
                 <h2
@@ -1503,7 +1635,7 @@ function UnifiedWorkspacePage() {
                     ? "Log in or sign up"
                     : "Create your account"}
                 </h2>
-                <p className="text-[15px] text-[#a9c2ba] mt-2">
+                <p className="text-[15px] text-[var(--ci-modal-subtext)] mt-2">
                   {authModalMode === "login"
                     ? "Save analyses, revisit feedback, and keep your workspace synced."
                     : "Start saving analyses in your personal sidebar history."}
@@ -1512,7 +1644,7 @@ function UnifiedWorkspacePage() {
               <button
                 type="button"
                 onClick={closeAuthModal}
-                className="w-10 h-10 rounded-xl border border-[#2f584d] flex items-center justify-center text-[#bfd4cd] hover:bg-[#17312a] transition-colors cursor-pointer"
+                className="w-10 h-10 rounded-xl border border-[var(--ci-modal-border)] flex items-center justify-center text-[var(--ci-modal-icon)] hover:bg-[var(--ci-modal-hover)] transition-colors cursor-pointer"
                 aria-label="Close auth modal"
               >
                 <X className="w-5 h-5" />
@@ -1520,7 +1652,7 @@ function UnifiedWorkspacePage() {
             </div>
 
             {authNotice && (
-              <p className="mb-4 rounded-2xl border border-[#3a8f77] bg-[#16362d] px-4 py-3 text-[13px] text-[#9dd5bf]">
+              <p className="mb-4 rounded-2xl border border-[var(--ci-notice-border)] bg-[var(--ci-notice-bg)] px-4 py-3 text-[13px] text-[var(--ci-notice-text)]">
                 {authNotice}
               </p>
             )}
@@ -1532,7 +1664,7 @@ function UnifiedWorkspacePage() {
                   value={loginEmail}
                   onChange={(event) => setLoginEmail(event.target.value)}
                   placeholder="Email address"
-                  className="w-full h-[70px] rounded-2xl border border-[#365e54] bg-[#1a2f29] px-5 text-[17px] text-white placeholder:text-[#86a39c] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                  className="w-full h-[70px] rounded-2xl border border-[var(--ci-modal-input-border)] bg-[var(--ci-modal-input-bg)] px-5 text-[17px] text-[var(--ci-modal-text)] placeholder:text-[var(--ci-modal-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                   required
                 />
                 <div className="relative">
@@ -1541,13 +1673,13 @@ function UnifiedWorkspacePage() {
                     value={loginPassword}
                     onChange={(event) => setLoginPassword(event.target.value)}
                     placeholder="Password"
-                    className="w-full h-[70px] rounded-2xl border border-[#365e54] bg-[#1a2f29] px-5 pr-14 text-[17px] text-white placeholder:text-[#86a39c] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                    className="w-full h-[70px] rounded-2xl border border-[var(--ci-modal-input-border)] bg-[var(--ci-modal-input-bg)] px-5 pr-14 text-[17px] text-[var(--ci-modal-text)] placeholder:text-[var(--ci-modal-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setLoginShowPassword((prev) => !prev)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9cb6af] cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--ci-icon-secondary)] cursor-pointer"
                   >
                     {loginShowPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -1559,7 +1691,7 @@ function UnifiedWorkspacePage() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full h-[70px] rounded-2xl bg-[#4CB572] text-[#13382f] text-[18px] hover:bg-[#3ea464] disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full h-[70px] rounded-2xl bg-[var(--ci-accent)] text-[var(--ci-contrast-on-accent)] text-[18px] hover:bg-[var(--ci-accent-hover)] disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
                   style={{ fontWeight: 600 }}
                 >
                   {authLoading ? (
@@ -1578,7 +1710,7 @@ function UnifiedWorkspacePage() {
                     setAuthNotice(null);
                     setAuthModalMode("signup");
                   }}
-                  className="w-full h-[62px] rounded-2xl border border-[#365e54] text-[15px] text-[#ccddd9] hover:bg-[#17312a] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full h-[62px] rounded-2xl border border-[var(--ci-modal-input-border)] text-[15px] text-[var(--ci-modal-secondary-text)] hover:bg-[var(--ci-modal-hover)] transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
                   <UserPlus className="w-5 h-5" />
                   Need an account? Sign up
@@ -1591,7 +1723,7 @@ function UnifiedWorkspacePage() {
                   value={signupName}
                   onChange={(event) => setSignupName(event.target.value)}
                   placeholder="Full name"
-                  className="w-full h-[70px] rounded-2xl border border-[#365e54] bg-[#1a2f29] px-5 text-[17px] text-white placeholder:text-[#86a39c] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                  className="w-full h-[70px] rounded-2xl border border-[var(--ci-modal-input-border)] bg-[var(--ci-modal-input-bg)] px-5 text-[17px] text-[var(--ci-modal-text)] placeholder:text-[var(--ci-modal-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                   required
                 />
                 <input
@@ -1599,7 +1731,7 @@ function UnifiedWorkspacePage() {
                   value={signupEmail}
                   onChange={(event) => setSignupEmail(event.target.value)}
                   placeholder="Email address"
-                  className="w-full h-[70px] rounded-2xl border border-[#365e54] bg-[#1a2f29] px-5 text-[17px] text-white placeholder:text-[#86a39c] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                  className="w-full h-[70px] rounded-2xl border border-[var(--ci-modal-input-border)] bg-[var(--ci-modal-input-bg)] px-5 text-[17px] text-[var(--ci-modal-text)] placeholder:text-[var(--ci-modal-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                   required
                 />
                 <div className="relative">
@@ -1608,14 +1740,14 @@ function UnifiedWorkspacePage() {
                     value={signupPassword}
                     onChange={(event) => setSignupPassword(event.target.value)}
                     placeholder="Password (8+ characters)"
-                    className="w-full h-[70px] rounded-2xl border border-[#365e54] bg-[#1a2f29] px-5 pr-14 text-[17px] text-white placeholder:text-[#86a39c] focus:outline-none focus:ring-2 focus:ring-[#4CB572]/30"
+                    className="w-full h-[70px] rounded-2xl border border-[var(--ci-modal-input-border)] bg-[var(--ci-modal-input-bg)] px-5 pr-14 text-[17px] text-[var(--ci-modal-text)] placeholder:text-[var(--ci-modal-input-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
                     required
                     minLength={8}
                   />
                   <button
                     type="button"
                     onClick={() => setSignupShowPassword((prev) => !prev)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9cb6af] cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--ci-icon-secondary)] cursor-pointer"
                   >
                     {signupShowPassword ? (
                       <EyeOff className="w-5 h-5" />
@@ -1627,7 +1759,7 @@ function UnifiedWorkspacePage() {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="w-full h-[70px] rounded-2xl bg-[#4CB572] text-[#13382f] text-[18px] hover:bg-[#3ea464] disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full h-[70px] rounded-2xl bg-[var(--ci-accent)] text-[var(--ci-contrast-on-accent)] text-[18px] hover:bg-[var(--ci-accent-hover)] disabled:opacity-60 transition-colors cursor-pointer flex items-center justify-center gap-2"
                   style={{ fontWeight: 600 }}
                 >
                   {authLoading ? (
@@ -1646,7 +1778,7 @@ function UnifiedWorkspacePage() {
                     setAuthNotice(null);
                     setAuthModalMode("login");
                   }}
-                  className="w-full h-[62px] rounded-2xl border border-[#365e54] text-[15px] text-[#ccddd9] hover:bg-[#17312a] transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full h-[62px] rounded-2xl border border-[var(--ci-modal-input-border)] text-[15px] text-[var(--ci-modal-secondary-text)] hover:bg-[var(--ci-modal-hover)] transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
                   <LogIn className="w-5 h-5" />
                   Already have an account? Log in
@@ -1655,7 +1787,10 @@ function UnifiedWorkspacePage() {
             )}
 
             {authError && (
-              <p className="mt-4 text-[14px] text-[#f0a7a7]" role="alert">
+              <p
+                className="mt-4 text-[14px] text-[var(--ci-error-soft)]"
+                role="alert"
+              >
                 {authError}
               </p>
             )}
@@ -1670,7 +1805,10 @@ export default function WorkspacePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#edf4f2] flex items-center justify-center text-[#135E4B]">
+        <div
+          className="min-h-screen bg-[var(--ci-app-bg)] flex items-center justify-center text-[var(--ci-loading-text)]"
+          style={getThemeCssVars(DEFAULT_THEME)}
+        >
           Loading workspace...
         </div>
       }
