@@ -12,7 +12,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
-  CheckCircle2,
+  Check,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -36,11 +36,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import {
-  mockFeedback,
-  mockGeneratedThumbnails,
-  mockPhrases,
-} from "./lib/mockData";
+import { mockGeneratedThumbnails } from "./lib/mockData";
 import { supabase } from "./lib/supabaseClient";
 import {
   DEFAULT_THEME,
@@ -59,6 +55,18 @@ type AnalyzeForm = {
   subscriberCount: string;
 };
 
+type FeedbackSection = {
+  headline: string;
+  details: string;
+  tips: [string, string, string];
+};
+
+type AnalysisFeedback = {
+  thumbnail: FeedbackSection;
+  title: FeedbackSection;
+  tags: FeedbackSection;
+};
+
 type RecentAnalysisItem = {
   id: string;
   title: string;
@@ -67,6 +75,7 @@ type RecentAnalysisItem = {
   subscriberCount: number | null;
   createdAt: string;
   score: number | null;
+  feedback: AnalysisFeedback;
   thumbnailUrl: string | null;
 };
 
@@ -78,6 +87,114 @@ type HistorySection = {
   label: string;
   items: RecentAnalysisItem[];
 };
+
+type YoutubePreviewVideo = {
+  id: string;
+  title: string;
+  channel: string;
+  views: string;
+  postedAt: string;
+  duration: string;
+  description: string;
+  thumbnail: string;
+  isUser?: boolean;
+};
+
+function getMockThumbnail(index: number): string {
+  if (mockGeneratedThumbnails.length === 0) {
+    return "";
+  }
+  const safeIndex =
+    ((index % mockGeneratedThumbnails.length) +
+      mockGeneratedThumbnails.length) %
+    mockGeneratedThumbnails.length;
+  return mockGeneratedThumbnails[safeIndex];
+}
+
+const YOUTUBE_PREVIEW_POOL: YoutubePreviewVideo[] = [
+  {
+    id: "sample-1",
+    title: "How to Beat Tough Opponents in Low Stakes Poker",
+    channel: "River Theory",
+    views: "951K views",
+    postedAt: "6 months ago",
+    duration: "32:13",
+    description:
+      "Every key hand from the session with decisions broken down street by street.",
+    thumbnail: getMockThumbnail(0),
+  },
+  {
+    id: "sample-2",
+    title: "From Broke to Bankroll: $150,000 Challenge",
+    channel: "Wolfgang Poker",
+    views: "49K views",
+    postedAt: "2 days ago",
+    duration: "18:49",
+    description:
+      "A full poker vlog covering high-pressure spots and bankroll risk management.",
+    thumbnail: getMockThumbnail(1),
+  },
+  {
+    id: "sample-3",
+    title: "Why Your Cards Matter Less Than You Think",
+    channel: "NorCalPoker",
+    views: "39K views",
+    postedAt: "2 weeks ago",
+    duration: "27:33",
+    description:
+      "Table dynamics and positioning concepts explained with practical hand examples.",
+    thumbnail: getMockThumbnail(2),
+  },
+  {
+    id: "sample-4",
+    title: "Cash Game Invitational Highlights",
+    channel: "Triton Poker",
+    views: "2.1M views",
+    postedAt: "4 weeks ago",
+    duration: "14:36",
+    description:
+      "Big pots, player reads, and momentum shifts from a stacked cash game lineup.",
+    thumbnail: getMockThumbnail(3),
+  },
+  {
+    id: "sample-5",
+    title: "Every Play with a Nickname!",
+    channel: "NFL Throwback",
+    views: "7.1M views",
+    postedAt: "3 years ago",
+    duration: "30:33",
+    description:
+      "Iconic moments revisited with commentary and behind-the-play context.",
+    thumbnail: getMockThumbnail(4),
+  },
+  {
+    id: "sample-6",
+    title: "No Game No Life OP - Piano Arrangement",
+    channel: "Luminote",
+    views: "966K views",
+    postedAt: "5 years ago",
+    duration: "5:05",
+    description:
+      "A cinematic piano performance with layered visuals and synchronized highlights.",
+    thumbnail: getMockThumbnail(5),
+  },
+];
+
+function hashText(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % 2_147_483_647;
+  }
+  return Math.abs(hash);
+}
+
+function rotateVideos<T>(items: T[], offset: number): T[] {
+  if (items.length === 0) {
+    return [];
+  }
+  const safeOffset = ((offset % items.length) + items.length) % items.length;
+  return [...items.slice(safeOffset), ...items.slice(0, safeOffset)];
+}
 
 function createEmptyForm(): AnalyzeForm {
   return {
@@ -110,6 +227,70 @@ function getScoreLabel(score: number | null): string {
 
   return "Needs Work";
 }
+
+function isFeedbackSection(value: unknown): value is FeedbackSection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const headline = (value as { headline?: unknown }).headline;
+  const details = (value as { details?: unknown }).details;
+  const tips = (value as { tips?: unknown }).tips;
+  return (
+    typeof headline === "string" &&
+    typeof details === "string" &&
+    Array.isArray(tips) &&
+    tips.length === 3 &&
+    tips.every((tip) => typeof tip === "string")
+  );
+}
+
+function isAnalysisFeedback(value: unknown): value is AnalysisFeedback {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const root = value as {
+    thumbnail?: unknown;
+    title?: unknown;
+    tags?: unknown;
+  };
+  return (
+    isFeedbackSection(root.thumbnail) &&
+    isFeedbackSection(root.title) &&
+    isFeedbackSection(root.tags)
+  );
+}
+
+const FALLBACK_FEEDBACK: AnalysisFeedback = {
+  thumbnail: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate thumbnail feedback.",
+    tips: [
+      "Use stronger contrast around key elements.",
+      "Keep text short and easy to read.",
+      "Highlight one clear focal point.",
+    ],
+  },
+  title: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate title feedback.",
+    tips: [
+      "Lead with the clearest audience outcome.",
+      "Use stronger emotional framing.",
+      "Reduce filler words for clarity.",
+    ],
+  },
+  tags: {
+    headline: "No feedback available yet",
+    details: "Run an analysis to generate tags feedback.",
+    tips: [
+      "Add long-tail intent-driven phrases.",
+      "Align tags with title wording.",
+      "Include niche and audience keywords.",
+    ],
+  },
+};
 
 function groupHistory(items: RecentAnalysisItem[]): HistorySection[] {
   const today = new Date();
@@ -154,7 +335,13 @@ function groupHistory(items: RecentAnalysisItem[]): HistorySection[] {
     }));
 }
 
-function ScoreRing({ score }: { score: number | null }) {
+function ScoreRing({
+  score,
+  size = 80,
+}: {
+  score: number | null;
+  size?: number;
+}) {
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
   const normalizedScore = typeof score === "number" ? score : 0;
@@ -168,9 +355,19 @@ function ScoreRing({ score }: { score: number | null }) {
           ? "var(--ci-score-mid)"
           : "var(--ci-score-bad)";
 
+  const scoreFontSize = Math.round(size * 0.35);
+  const labelFontSize = Math.round(size * 0.14);
+
   return (
-    <div className="relative flex items-center justify-center w-20 h-20">
-      <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        className="-rotate-90"
+        style={{ width: size, height: size }}
+        viewBox="0 0 100 100"
+      >
         <circle
           cx="50"
           cy="50"
@@ -194,12 +391,17 @@ function ScoreRing({ score }: { score: number | null }) {
       </svg>
       <div className="absolute flex flex-col items-center">
         <span
-          className="text-3xl text-[var(--ci-text-primary)]"
-          style={{ fontWeight: 700 }}
+          className="text-[var(--ci-text-primary)]"
+          style={{ fontWeight: 700, fontSize: scoreFontSize }}
         >
           {typeof score === "number" ? score : "--"}
         </span>
-        <span className="text-xs text-[var(--ci-text-subtle)]">/ 100</span>
+        <span
+          className="text-[var(--ci-text-subtle)]"
+          style={{ fontSize: labelFontSize }}
+        >
+          / 100
+        </span>
       </div>
     </div>
   );
@@ -209,16 +411,30 @@ function FeedbackCard({
   icon: Icon,
   title,
   summary,
-  score,
   details,
-  suggestions,
+  tips,
+  thumbnailMode,
+  generatedThumbnail,
+  onGenerate,
+  showGenerateButton,
+  generateDisabled,
+  generateBusy,
+  generateLabel = "Generate Suggestion",
+  onThumbnailClick,
 }: {
   icon: ElementType;
   title: string;
   summary: string;
-  score: number | null;
   details: string;
-  suggestions: string[];
+  tips?: string[];
+  thumbnailMode?: boolean;
+  generatedThumbnail?: string | null;
+  onGenerate?: () => void;
+  showGenerateButton?: boolean;
+  generateDisabled?: boolean;
+  generateBusy?: boolean;
+  generateLabel?: string;
+  onThumbnailClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -244,12 +460,6 @@ function FeedbackCard({
           </p>
         </div>
         <div className="flex items-center gap-3 pl-4">
-          <span
-            className="text-[22px] text-[var(--ci-warning)]"
-            style={{ fontWeight: 600 }}
-          >
-            {typeof score === "number" ? score : "--"}
-          </span>
           {open ? (
             <ChevronUp className="w-6 h-6 text-[var(--ci-icon-muted-2)]" />
           ) : (
@@ -257,23 +467,179 @@ function FeedbackCard({
           )}
         </div>
       </button>
-      {open && (
-        <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)]">
-          <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)] mt-4">
-            {details}
-          </p>
-          <div className="mt-4 space-y-2">
-            {suggestions.map((suggestion) => (
-              <div key={suggestion} className="flex items-start gap-2">
-                <CheckCircle2 className="w-5 h-5 text-[var(--ci-accent)] mt-1 flex-shrink-0" />
-                <p className="text-[14px] leading-relaxed text-[var(--ci-text-soft)]">
-                  {suggestion}
-                </p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 300ms ease",
+        }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)]">
+            {thumbnailMode ? (
+              <div
+                className="mt-4"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr",
+                  gap: "16px",
+                  alignItems: "start",
+                }}
+              >
+                <div className="min-w-0">
+                  <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                    {details}
+                  </p>
+                  {tips && tips.length > 0 && (
+                    <ul className="mt-4 space-y-2">
+                      {tips.map((tip, index) => (
+                        <li
+                          key={`${title}-tip-${index}`}
+                          className="flex items-start gap-2 text-[14px] leading-relaxed text-[var(--ci-text-soft)]"
+                        >
+                          <Check className="w-4 h-4 text-[var(--ci-accent-soft)] mt-[2px] flex-shrink-0" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div
+                    className="rounded-xl border-2 border-dashed border-[var(--ci-border)] overflow-hidden w-full"
+                    style={{ aspectRatio: "16/9" }}
+                  >
+                    {generatedThumbnail ? (
+                      <button
+                        type="button"
+                        onClick={onThumbnailClick}
+                        className="w-full h-full cursor-pointer"
+                      >
+                        <img
+                          src={generatedThumbnail}
+                          alt="Generated thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onGenerate}
+                        disabled={generateDisabled ?? !onGenerate}
+                        className={`w-full h-full flex items-center justify-center gap-2 transition-colors ${
+                          (generateDisabled ?? !onGenerate)
+                            ? "text-[var(--ci-text-subtle)] cursor-not-allowed opacity-60"
+                            : "text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] cursor-pointer"
+                        }`}
+                        style={{ fontWeight: 500 }}
+                      >
+                        {generateBusy ? (
+                          <LoaderCircle className="w-4 h-4 animate-spin text-[var(--ci-accent-soft)]" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                        )}
+                        <span className="text-[14px]">{generateLabel}</span>
+                      </button>
+                    )}
+                  </div>
+                  {generatedThumbnail && (
+                    <p className="text-[11px] text-center text-[var(--ci-text-subtle)]">
+                      Click to enlarge
+                    </p>
+                  )}
+                </div>
               </div>
-            ))}
+            ) : (
+              <div
+                className={`mt-4 ${
+                  showGenerateButton
+                    ? "sm:flex sm:items-stretch sm:justify-between sm:gap-4"
+                    : ""
+                }`}
+              >
+                <div className={showGenerateButton ? "min-w-0 flex-1" : ""}>
+                  <p className="text-[15px] leading-relaxed text-[var(--ci-text-soft)]">
+                    {details}
+                  </p>
+                  {tips && tips.length > 0 && (
+                    <ul className="mt-4 space-y-2">
+                      {tips.map((tip, index) => (
+                        <li
+                          key={`${title}-tip-${index}`}
+                          className="flex items-start gap-2 text-[14px] leading-relaxed text-[var(--ci-text-soft)]"
+                        >
+                          <Check className="w-4 h-4 text-[var(--ci-accent-soft)] mt-[2px] flex-shrink-0" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {showGenerateButton && (
+                  <div className="mt-4 sm:mt-0 sm:ml-2 sm:flex sm:flex-col sm:justify-end sm:flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={onGenerate}
+                      disabled={generateDisabled ?? !onGenerate}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--ci-border)] text-[14px] transition-colors ${
+                        (generateDisabled ?? !onGenerate)
+                          ? "opacity-60 cursor-not-allowed text-[var(--ci-text-subtle)]"
+                          : "text-[var(--ci-text-soft)] hover:bg-[var(--ci-surface-hover)] cursor-pointer"
+                      }`}
+                      style={{ fontWeight: 500 }}
+                    >
+                      {generateBusy ? (
+                        <LoaderCircle className="w-4 h-4 animate-spin text-[var(--ci-accent-soft)]" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 text-[var(--ci-accent-soft)]" />
+                      )}
+                      {generateLabel}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function ImageModal({
+  src,
+  alt,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      style={{ backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative rounded-2xl overflow-hidden shadow-2xl"
+        style={{ maxWidth: "50vw", maxHeight: "50vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="block object-contain"
+          style={{ maxWidth: "50vw", maxHeight: "50vh" }}
+        />
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer hover:bg-black/80 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -293,7 +659,10 @@ function UnifiedWorkspacePage() {
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [thumbnailView, setThumbnailView] = useState<ThumbnailView>("grid");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [titleSuggestionsOpen, setTitleSuggestionsOpen] = useState(false);
+  const [imageModal, setImageModal] = useState<{
+    src: string;
+    alt: string;
+  } | null>(null);
 
   const [form, setForm] = useState<AnalyzeForm>(createEmptyForm);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -361,6 +730,59 @@ function UnifiedWorkspacePage() {
       : thumbnailPreview;
   const displayedScore =
     workspaceMode === "analysis" ? (selectedAnalysis?.score ?? null) : null;
+  const displayedFeedback =
+    workspaceMode === "analysis"
+      ? (selectedAnalysis?.feedback ?? FALLBACK_FEEDBACK)
+      : FALLBACK_FEEDBACK;
+  const userChannelName = user?.email?.split("@")[0]?.trim() || "Your Channel";
+  const previewVideos = useMemo(() => {
+    const seedSource = `${selectedAnalysis?.id ?? "new"}:${displayedTitle}:${displayedTopic}`;
+    const rotatedPool = rotateVideos(
+      YOUTUBE_PREVIEW_POOL,
+      hashText(seedSource) % YOUTUBE_PREVIEW_POOL.length
+    );
+    const userVideo: YoutubePreviewVideo = {
+      id: "user-video",
+      title: displayedTitle,
+      channel: userChannelName,
+      views: "0 views",
+      postedAt: "Not posted",
+      duration: "10:00",
+      description:
+        displayedTopic !== "Not provided"
+          ? `Niche: ${displayedTopic}`
+          : "Your draft video preview appears here before publishing.",
+      thumbnail: displayedThumbnail ?? getMockThumbnail(0),
+      isUser: true,
+    };
+
+    return [
+      rotatedPool[0],
+      userVideo,
+      rotatedPool[1],
+      rotatedPool[2],
+      rotatedPool[3],
+      rotatedPool[4],
+    ].filter(Boolean) as YoutubePreviewVideo[];
+  }, [
+    displayedThumbnail,
+    displayedTitle,
+    displayedTopic,
+    selectedAnalysis?.id,
+    userChannelName,
+  ]);
+  const listPreviewVideos = useMemo(() => {
+    if (previewVideos.length < 6) {
+      return previewVideos;
+    }
+    return [
+      previewVideos[3],
+      previewVideos[1],
+      previewVideos[4],
+      previewVideos[0],
+      previewVideos[5],
+    ];
+  }, [previewVideos]);
 
   const closeAuthModal = () => {
     setAuthModalMode(null);
@@ -374,7 +796,6 @@ function UnifiedWorkspacePage() {
     setAnalyzeError(null);
     setActiveTab("feedback");
     setDrawerOpen(false);
-    setTitleSuggestionsOpen(false);
     setForm(createEmptyForm());
     setThumbnailPreview(null);
     setThumbnailFile(null);
@@ -570,12 +991,16 @@ function UnifiedWorkspacePage() {
       const data = (await response.json()) as {
         entryId?: string;
         score?: number;
+        feedback?: unknown;
         error?: string;
       };
 
       if (!response.ok || typeof data.score !== "number") {
         throw new Error(data.error ?? "Analysis failed. Please try again.");
       }
+      const feedback = isAnalysisFeedback(data.feedback)
+        ? data.feedback
+        : FALLBACK_FEEDBACK;
 
       const parsedSubscriberCount = Number.parseInt(form.subscriberCount, 10);
       const temporaryItem: RecentAnalysisItem = {
@@ -588,6 +1013,7 @@ function UnifiedWorkspacePage() {
           : null,
         createdAt: new Date().toISOString(),
         score: data.score,
+        feedback,
         thumbnailUrl: thumbnailPreview,
       };
 
@@ -1259,7 +1685,7 @@ function UnifiedWorkspacePage() {
                           fontWeight: activeTab === "visual" ? 600 : 500,
                         }}
                       >
-                        Visual
+                        Visualize
                       </button>
                     </div>
                   </div>
@@ -1274,98 +1700,44 @@ function UnifiedWorkspacePage() {
                       <FeedbackCard
                         icon={ImageIcon}
                         title="Thumbnail Feedback"
-                        summary={mockFeedback.thumbnail.headline}
-                        score={mockFeedback.thumbnail.score}
-                        details={mockFeedback.thumbnail.details}
-                        suggestions={mockFeedback.thumbnail.suggestions}
+                        summary={displayedFeedback.thumbnail.headline}
+                        details={displayedFeedback.thumbnail.details}
+                        tips={displayedFeedback.thumbnail.tips}
+                        thumbnailMode
+                        generateDisabled
                       />
                       <FeedbackCard
                         icon={Type}
                         title="Title Feedback"
-                        summary={mockFeedback.title.headline}
-                        score={mockFeedback.title.score}
-                        details={mockFeedback.title.details}
-                        suggestions={mockFeedback.title.suggestions}
+                        summary={displayedFeedback.title.headline}
+                        details={displayedFeedback.title.details}
+                        tips={displayedFeedback.title.tips}
+                        showGenerateButton
+                        generateDisabled
                       />
                       <FeedbackCard
                         icon={Tag}
                         title="Tags Feedback"
-                        summary={mockFeedback.tags.headline}
-                        score={mockFeedback.tags.score}
-                        details={mockFeedback.tags.details}
-                        suggestions={mockFeedback.tags.suggestions}
+                        summary={displayedFeedback.tags.headline}
+                        details={displayedFeedback.tags.details}
+                        tips={displayedFeedback.tags.tips}
+                        showGenerateButton
+                        generateDisabled
                       />
 
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] shadow-[0_8px_24px_-18px_rgba(0,0,0,0.75)] overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTitleSuggestionsOpen((prev) => !prev)
-                          }
-                          className="w-full px-6 py-5 flex items-center gap-4 text-left cursor-pointer hover:bg-[var(--ci-surface-hover)] transition-colors"
-                        >
-                          <div className="w-12 h-12 rounded-2xl bg-[var(--ci-surface-accent-soft)] flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-[var(--ci-accent-soft)]" />
-                          </div>
-                          <div className="flex-1">
-                            <p
-                              className="text-[22px] text-[var(--ci-text-primary)]"
-                              style={{ fontWeight: 600 }}
-                            >
-                              Title Suggestions
-                            </p>
-                            <p className="text-[15px] text-[var(--ci-text-muted)] mt-1">
-                              AI-generated optimized alternatives
-                            </p>
-                          </div>
-                          <span className="rounded-2xl border border-[var(--ci-control-border-alt)] px-4 py-2 text-[14px] text-[var(--ci-text-soft)] flex items-center gap-2">
-                            {titleSuggestionsOpen ? "Hide" : "Show"}
-                            {titleSuggestionsOpen ? (
-                              <ChevronUp className="w-5 h-5" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5" />
-                            )}
-                          </span>
-                        </button>
-
-                        {titleSuggestionsOpen && (
-                          <div className="px-6 pb-5 border-t border-[var(--ci-border)] bg-[var(--ci-surface-raised)] space-y-3">
-                            {mockPhrases.slice(0, 4).map((phrase) => (
-                              <div
-                                key={phrase.id}
-                                className="rounded-2xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-4 py-3"
-                              >
-                                <p
-                                  className="text-[14px] text-[var(--ci-text-soft)]"
-                                  style={{ fontWeight: 500 }}
-                                >
-                                  {phrase.phrase}
-                                </p>
-                                <p className="text-[13px] text-[var(--ci-text-subtle)] mt-1">
-                                  Score {phrase.score} - {phrase.reason}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
                       <div className="pt-8">
-                        <div className="w-[320px] max-w-full rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-5 py-4 shadow-[0_18px_35px_-30px_rgba(0,0,0,0.75)]">
-                          <div className="flex items-center gap-4">
-                            <ScoreRing score={displayedScore} />
+                        <div className="w-[400px] max-w-full rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] px-6 py-5 shadow-[0_18px_35px_-30px_rgba(0,0,0,0.75)]">
+                          <div className="flex items-center gap-5">
+                            <ScoreRing score={displayedScore} size={100} />
                             <div>
-                              <p className="text-[19px] text-[var(--ci-text-soft)]">
+                              <p className="text-[24px] text-[var(--ci-text-soft)]">
                                 Overall Score
                               </p>
                               <p
-                                className="text-[16px] text-[var(--ci-warning)]"
+                                className="text-[20px] text-[var(--ci-warning)]"
                                 style={{ fontWeight: 600 }}
                               >
                                 {getScoreLabel(displayedScore)}
-                              </p>
-                              <p className="text-[15px] text-[var(--ci-text-subtle)]">
-                                All aspects
                               </p>
                             </div>
                           </div>
@@ -1373,114 +1745,139 @@ function UnifiedWorkspacePage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-5">
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <ImageIcon className="w-5 h-5 text-[var(--ci-text-muted)]" />
-                          <p
-                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
-                            style={{ fontWeight: 600 }}
+                    <div className="p-0 sm:p-0">
+                      <div className="flex justify-end mb-4">
+                        <div className="flex bg-[var(--ci-toggle-bg)] rounded-xl p-1 border border-[var(--ci-border)]">
+                          <button
+                            type="button"
+                            onClick={() => setThumbnailView("grid")}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
+                              thumbnailView === "grid"
+                                ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                : "text-[var(--ci-icon-muted)]"
+                            }`}
                           >
-                            Thumbnail
-                          </p>
+                            <Grid3X3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setThumbnailView("list")}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
+                              thumbnailView === "list"
+                                ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
+                                : "text-[var(--ci-icon-muted)]"
+                            }`}
+                          >
+                            <List className="w-4 h-4" />
+                          </button>
                         </div>
-                        {displayedThumbnail ? (
-                          <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] aspect-video">
-                            <img
-                              src={displayedThumbnail}
-                              alt="Analyzed thumbnail"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="rounded-2xl border-2 border-dashed border-[var(--ci-border)] aspect-video flex items-center justify-center text-[var(--ci-text-subtle)]">
-                            No thumbnail available
-                          </div>
-                        )}
                       </div>
 
-                      <div className="rounded-3xl border border-[var(--ci-border)] bg-[var(--ci-surface)] p-5">
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <p
-                            className="text-[17px] text-[var(--ci-text-heading-soft)]"
-                            style={{ fontWeight: 600 }}
-                          >
-                            Generated thumbnail ideas
-                          </p>
-                          <div className="flex bg-[var(--ci-toggle-bg)] rounded-xl p-1 border border-[var(--ci-border)]">
-                            <button
-                              type="button"
-                              onClick={() => setThumbnailView("grid")}
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
-                                thumbnailView === "grid"
-                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
-                                  : "text-[var(--ci-icon-muted)]"
-                              }`}
+                      {thumbnailView === "grid" ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                          {previewVideos.map((video, index) => (
+                            <article
+                              key={`${video.id}-${index}`}
+                              className="relative"
                             >
-                              <Grid3X3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setThumbnailView("list")}
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer ${
-                                thumbnailView === "list"
-                                  ? "bg-[var(--ci-toggle-active-bg)] text-[var(--ci-accent-soft-strong)] shadow-sm"
-                                  : "text-[var(--ci-icon-muted)]"
-                              }`}
-                            >
-                              <List className="w-4 h-4" />
-                            </button>
-                          </div>
+                              <button
+                                type="button"
+                                className="relative w-full rounded-2xl overflow-hidden aspect-video block cursor-zoom-in"
+                                onClick={() =>
+                                  setImageModal({
+                                    src: video.thumbnail,
+                                    alt: video.title,
+                                  })
+                                }
+                              >
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] text-white">
+                                  {video.duration}
+                                </span>
+                              </button>
+
+                              <div className="mt-2 flex items-start gap-3">
+                                <div className="w-9 h-9 rounded-full bg-[#262626] text-[#e7e7e7] flex items-center justify-center text-[12px]">
+                                  {video.channel.slice(0, 1).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className="text-[16px] leading-[1.25] text-[#f1f1f1] truncate"
+                                    style={{ fontWeight: 500 }}
+                                  >
+                                    {video.title}
+                                  </p>
+                                  <p className="text-[13px] text-[#a8a8a8] mt-0.5 truncate">
+                                    {video.channel}
+                                  </p>
+                                  <p className="text-[13px] text-[#a8a8a8] mt-0.5 truncate">
+                                    {video.views} • {video.postedAt}
+                                  </p>
+                                </div>
+                                <span className="text-[#9a9a9a] text-[18px] leading-none">
+                                  ⋮
+                                </span>
+                              </div>
+                            </article>
+                          ))}
                         </div>
-                        {thumbnailView === "grid" ? (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {mockGeneratedThumbnails
-                              .slice(0, 6)
-                              .map((source, index) => (
-                                <div
-                                  key={`${source}-${index}`}
-                                  className="rounded-xl overflow-hidden border border-[var(--ci-border)] aspect-video"
-                                >
-                                  <img
-                                    src={source}
-                                    alt={`Generated thumbnail ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
+                      ) : (
+                        <div className="space-y-2">
+                          {listPreviewVideos.map((video, index) => (
+                            <article
+                              key={`${video.id}-list-${index}`}
+                              className="relative flex gap-2 rounded-xl p-1"
+                            >
+                              <button
+                                type="button"
+                                className="relative w-[34%] max-w-[220px] rounded-lg overflow-hidden aspect-video flex-shrink-0 cursor-zoom-in block"
+                                onClick={() =>
+                                  setImageModal({
+                                    src: video.thumbnail,
+                                    alt: video.title,
+                                  })
+                                }
+                              >
+                                <img
+                                  src={video.thumbnail}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/80 px-1.5 py-0.5 text-[11px] text-white">
+                                  {video.duration}
+                                </span>
+                              </button>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p
+                                    className="text-[18px] leading-[1.2] text-[#f1f1f1] truncate"
+                                    style={{ fontWeight: 500 }}
+                                  >
+                                    {video.title}
+                                  </p>
+                                  <span className="text-[#9a9a9a] text-[16px] leading-none">
+                                    ⋮
+                                  </span>
                                 </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            {mockGeneratedThumbnails
-                              .slice(0, 4)
-                              .map((source, index) => (
-                                <div
-                                  key={`${source}-${index}`}
-                                  className="flex gap-3 rounded-xl border border-[var(--ci-border)] p-3"
-                                >
-                                  <div className="w-36 rounded-lg overflow-hidden border border-[var(--ci-border)] aspect-video flex-shrink-0">
-                                    <img
-                                      src={source}
-                                      alt={`Generated thumbnail ${index + 1}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div>
-                                    <p
-                                      className="text-[15px] text-[var(--ci-text-heading-soft)]"
-                                      style={{ fontWeight: 500 }}
-                                    >
-                                      Variant {index + 1}
-                                    </p>
-                                    <p className="text-[13px] text-[var(--ci-text-subtle)]">
-                                      Balanced contrast and readable text
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
+                                <p className="text-[12px] text-[#a8a8a8] mt-0.5">
+                                  {video.views} • {video.postedAt}
+                                </p>
+                                <p className="text-[12px] text-[#a8a8a8] mt-0.5 truncate">
+                                  {video.channel}
+                                </p>
+                                <p className="text-[11px] text-[#8c8c8c] mt-0.5 leading-relaxed truncate">
+                                  {video.description}
+                                </p>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </section>
@@ -1533,13 +1930,22 @@ function UnifiedWorkspacePage() {
                         THUMBNAIL
                       </p>
                       {displayedThumbnail ? (
-                        <div className="rounded-2xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)]">
+                        <button
+                          type="button"
+                          className="w-full rounded-2xl overflow-hidden border border-[var(--ci-border)] bg-[var(--ci-surface)] block cursor-zoom-in"
+                          onClick={() =>
+                            setImageModal({
+                              src: displayedThumbnail,
+                              alt: "Submitted thumbnail",
+                            })
+                          }
+                        >
                           <img
                             src={displayedThumbnail}
                             alt="Submitted thumbnail"
                             className="w-full h-[180px] object-cover"
                           />
-                        </div>
+                        </button>
                       ) : (
                         <div className="rounded-2xl border border-dashed border-[var(--ci-border)] bg-[var(--ci-surface)] h-[140px] flex items-center justify-center text-[var(--ci-text-subtle)]">
                           No thumbnail
@@ -1796,6 +2202,14 @@ function UnifiedWorkspacePage() {
             )}
           </div>
         </div>
+      )}
+
+      {imageModal && (
+        <ImageModal
+          src={imageModal.src}
+          alt={imageModal.alt}
+          onClose={() => setImageModal(null)}
+        />
       )}
     </div>
   );
