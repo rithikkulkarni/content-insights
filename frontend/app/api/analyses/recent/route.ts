@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 const THUMBNAIL_BUCKET = process.env.SUPABASE_THUMBNAIL_BUCKET || "thumbnails";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 type EntryRow = {
   entry_id: string;
@@ -118,24 +121,80 @@ function getFeedbackSections(feedback: EntryRow["feedback"]) {
   };
 }
 
-export async function GET() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+function getBearerToken(request: Request): string | null {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) {
+    return null;
+  }
 
-  if (!user) {
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme?.toLowerCase() !== "bearer" || !token) {
+    return null;
+  }
+
+  const trimmed = token.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function getUserIdFromJwt(accessToken: string): string | null {
+  const segments = accessToken.split(".");
+  if (segments.length < 2) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(
+      Buffer.from(segments[1], "base64url").toString("utf8")
+    ) as { sub?: unknown; exp?: unknown };
+
+    if (typeof payload.exp === "number") {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      if (payload.exp <= nowSeconds) {
+        return null;
+      }
+    }
+
+    return typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function GET(request: Request) {
+  const accessToken = getBearerToken(request);
+  if (!accessToken) {
     return NextResponse.json(
       { error: "You must be signed in to view recent analyses." },
       { status: 401 }
     );
   }
 
+  const userId = getUserIdFromJwt(accessToken);
+  if (!userId) {
+    return NextResponse.json(
+      { error: "You must be signed in to view recent analyses." },
+      { status: 401 }
+    );
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
   const { data, error } = await supabase
     .from("entries")
     .select(
       "entry_id,title,tags,topic,subscriber_count,created_at,thumbnail_path,feedback(score,thumbnail_feedback,title_feedback,tag_feedback)"
     )
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
 

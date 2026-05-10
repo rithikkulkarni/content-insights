@@ -9,8 +9,30 @@ const supabasePublishableKey =
 
 let browserClient: SupabaseClient | undefined;
 
+function clearMalformedCookies() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const cookiePairs = document.cookie.split(";");
+  cookiePairs.forEach((pair) => {
+    const [rawName] = pair.trim().split("=");
+    const name = rawName?.trim();
+    if (!name) {
+      return;
+    }
+
+    if (!name.includes("[object")) {
+      return;
+    }
+
+    document.cookie = `${name}=; path=/; max-age=0`;
+  });
+}
+
 export function getSupabaseBrowserClient(): SupabaseClient {
   if (!browserClient) {
+    clearMalformedCookies();
     browserClient = createBrowserClient(supabaseUrl, supabasePublishableKey);
   }
 

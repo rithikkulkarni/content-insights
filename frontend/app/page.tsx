@@ -816,13 +816,32 @@ function UnifiedWorkspacePage() {
       setHistoryError(null);
 
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const accessToken = session?.access_token;
+        if (!accessToken) {
+          throw new Error("Session expired. Please sign in again.");
+        }
+
         const response = await fetch("/api/analyses/recent", {
           cache: "no-store",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
-        const payload = (await response.json()) as {
+        let payload: {
           items?: RecentAnalysisItem[];
           error?: string;
         };
+        try {
+          payload = (await response.json()) as {
+            items?: RecentAnalysisItem[];
+            error?: string;
+          };
+        } catch {
+          throw new Error("Failed to parse analysis history response.");
+        }
 
         if (!response.ok) {
           throw new Error(payload.error ?? "Failed to load analyses.");

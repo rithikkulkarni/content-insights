@@ -1,0 +1,11 @@
+
+> @figma/my-make-file@0.0.1 dev
+> next dev --webpack --port 3011
+
+▲ Next.js 16.2.4 (webpack)
+- Local:         http://localhost:3011
+- Network:       http://169.254.50.229:3011
+- Environments: .env.local
+✓ Ready in 481ms
+
+[?25h

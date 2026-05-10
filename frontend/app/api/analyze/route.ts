@@ -284,8 +284,9 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const userId = typeof user?.id === "string" ? user.id : null;
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json(
       { error: "You must be signed in to analyze content." },
       { status: 401 }
@@ -407,7 +408,7 @@ export async function POST(request: Request) {
   const { data: entry, error: entryError } = await supabase
     .from("entries")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       thumbnail_path: null,
       title,
       tags: toTagArray(tags),
@@ -425,7 +426,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const thumbnailPath = `${user.id}/${entry.entry_id}/thumbnail.${getFileExtension(thumbnail)}`;
+  const thumbnailPath = `${userId}/${entry.entry_id}/thumbnail.${getFileExtension(thumbnail)}`;
   const { error: thumbnailUploadError } = await supabase.storage
     .from(thumbnailBucket)
     .upload(thumbnailPath, thumbnail, {

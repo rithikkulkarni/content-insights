@@ -18,14 +18,14 @@ export function useAuthUser(): AuthUserState {
 
     const loadUser = async () => {
       const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!isMounted) {
         return;
       }
 
-      setUser(currentUser);
+      setUser(session?.user ?? null);
       setLoading(false);
     };
 
